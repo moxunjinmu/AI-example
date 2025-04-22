@@ -1,0 +1,240 @@
+/**
+ * @Author: moxunjinmu
+ * @Date: 2025-04-08 19:44:41
+ * @Description: 贪吃蛇游戏v3版本 - 样式
+ */
+
+body {
+    font-family: 'Microsoft YaHei', sans-serif;
+    background: radial-gradient(circle at 50% 20%, #0a0a2e, #000);
+    display: flex;
+    justify-content: center;
+    padding: 20px;
+    margin: 0;
+    color: #fff;
+}
+
+.game-container {
+    background: rgba(10, 10, 46, 0.8);
+    border: 2px solid #00f7ff;
+    box-shadow: 0 0 30px rgba(0, 247, 255, 0.3);
+    border-radius: 10px;
+    padding: 20px;
+    text-align: center;
+    max-width: 800px;
+    width: 100%;
+}
+
+h1 {
+    color: #00f7ff;
+    text-shadow: 0 0 10px rgba(0, 247, 255, 0.5);
+    margin-top: 0;
+    font-size: 2.5rem;
+}
+
+.game-info {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 15px;
+    padding: 10px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(0, 247, 255, 0.3);
+    border-radius: 5px;
+}
+
+.score-container, .combo-container {
+    font-size: 18px;
+    font-weight: bold;
+    color: #00f7ff;
+    text-shadow: 0 0 5px rgba(0, 247, 255, 0.5);
+}
+
+.speed-container {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.canvas-container {
+    position: relative;
+    margin: 0 auto;
+    width: 600px;
+    height: 600px;
+}
+
+#game-canvas {
+    background-color: rgba(0, 0, 0, 0.5);
+    border: 2px solid #00f7ff;
+    border-radius: 5px;
+    box-shadow: 0 0 15px rgba(0, 247, 255, 0.3);
+    margin: 0 auto;
+    display: block;
+}
+
+.controls {
+    margin-top: 15px;
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+}
+
+.game-modes {
+    margin-top: 15px;
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+}
+
+button {
+    background: linear-gradient(to bottom, #00a8cc, #0088a9);
+    border: none;
+    color: white;
+    padding: 10px 15px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    margin: 4px 2px;
+    cursor: pointer;
+    border-radius: 5px;
+    transition: all 0.3s;
+    box-shadow: 0 0 10px rgba(0, 247, 255, 0.3);
+}
+
+button:hover {
+    background: linear-gradient(to bottom, #00c3e3, #00a8cc);
+    box-shadow: 0 0 15px rgba(0, 247, 255, 0.5);
+    transform: translateY(-2px);
+}
+
+#pause-btn {
+    background: linear-gradient(to bottom, #f39c12, #e67e22);
+}
+
+#pause-btn:hover {
+    background: linear-gradient(to bottom, #f5b041, #f39c12);
+}
+
+#restart-btn {
+    background: linear-gradient(to bottom, #e74c3c, #c0392b);
+}
+
+#restart-btn:hover {
+    background: linear-gradient(to bottom, #ec7063, #e74c3c);
+}
+
+input[type="range"] {
+    -webkit-appearance: none;
+    width: 100px;
+    height: 8px;
+    background: linear-gradient(to right, #0088a9, #00f7ff);
+    border-radius: 5px;
+    cursor: pointer;
+    box-shadow: 0 0 5px rgba(0, 247, 255, 0.3);
+}
+
+input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px;
+    height: 20px;
+    background: #00f7ff;
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 0 10px rgba(0, 247, 255, 0.5);
+}
+
+.instructions {
+    margin-top: 20px;
+    text-align: left;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(0, 247, 255, 0.3);
+    border-radius: 5px;
+    padding: 15px;
+}
+
+.instructions h2 {
+    color: #00f7ff;
+    margin-top: 0;
+}
+
+.instructions p, .instructions li {
+    margin: 5px 0;
+    color: #e0e0e0;
+}
+
+.instructions ul {
+    padding-left: 20px;
+}
+
+.mode-btn {
+    background: linear-gradient(to bottom, #3498db, #2980b9);
+}
+
+.mode-btn:hover {
+    background: linear-gradient(to bottom, #5dade2, #3498db);
+}
+
+.mode-btn.active {
+    background: linear-gradient(to bottom, #00ff88, #00cc6a);
+    box-shadow: 0 0 15px rgba(0, 255, 136, 0.5);
+}
+
+/* 食物颜色样式 */
+.food-normal {
+    color: #FF0066;
+    text-shadow: 0 0 5px rgba(255, 0, 102, 0.5);
+}
+
+.food-speed {
+    color: #00FF88;
+    text-shadow: 0 0 5px rgba(0, 255, 136, 0.5);
+}
+
+.food-shield {
+    color: #3498DB;
+    text-shadow: 0 0 5px rgba(52, 152, 219, 0.5);
+}
+
+.food-shrink {
+    color: #F39C12;
+    text-shadow: 0 0 5px rgba(243, 156, 18, 0.5);
+}
+
+/* 动画效果 */
+@keyframes pulse {
+    0% { transform: scale(1); opacity: 0.8; }
+    50% { transform: scale(1.1); opacity: 1; }
+    100% { transform: scale(1); opacity: 0.8; }
+}
+
+@keyframes glow {
+    0% { box-shadow: 0 0 5px rgba(0, 247, 255, 0.3); }
+    50% { box-shadow: 0 0 20px rgba(0, 247, 255, 0.6); }
+    100% { box-shadow: 0 0 5px rgba(0, 247, 255, 0.3); }
+}
+
+/* 响应式设计 */
+@media (max-width: 850px) {
+    .game-container {
+        padding: 10px;
+    }
+    
+    .canvas-container {
+        width: 100%;
+        height: auto;
+    }
+    
+    #game-canvas {
+        width: 100%;
+        height: auto;
+    }
+    
+    .game-info {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .controls, .game-modes {
+        flex-wrap: wrap;
+    }
+}

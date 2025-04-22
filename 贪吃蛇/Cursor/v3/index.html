@@ -1,0 +1,56 @@
+<!--
+ * @Author: moxunjinmu
+ * @Date: 2025-04-08 19:44:41
+ * @Description: 贪吃蛇游戏v3版本
+-->
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>贪吃蛇游戏 - 高级版</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="game-container">
+        <h1>贪吃蛇游戏</h1>
+        <div class="game-info">
+            <div class="score-container">分数: <span id="score">0</span></div>
+            <div class="combo-container">连击: <span id="combo">0</span>x</div>
+            <div class="speed-container">
+                <label for="speed-control">速度: </label>
+                <input type="range" id="speed-control" min="1" max="10" value="5">
+                <span id="speed-value">5</span>
+            </div>
+        </div>
+        <div class="canvas-container">
+            <canvas id="game-canvas" width="600" height="600"></canvas>
+        </div>
+        <div class="controls">
+            <button id="start-btn">开始游戏</button>
+            <button id="pause-btn">暂停</button>
+            <button id="restart-btn">重新开始</button>
+        </div>
+        <div class="game-modes">
+            <button id="classic-mode" class="mode-btn active">经典模式</button>
+            <button id="obstacle-mode" class="mode-btn">障碍模式</button>
+            <button id="ai-mode" class="mode-btn">AI对战</button>
+        </div>
+        <div class="instructions">
+            <h2>游戏说明</h2>
+            <p>使用键盘方向键控制蛇的移动方向</p>
+            <p>吃到食物可以增加分数和蛇的长度</p>
+            <p>撞到墙壁或自己的身体游戏结束</p>
+            <p>使用滑块调整蛇的移动速度</p>
+            <p>特殊食物会有不同效果：</p>
+            <ul>
+                <li><span class="food-normal">●</span> 普通食物 - 增加长度和分数</li>
+                <li><span class="food-speed">●</span> 加速食物 - 暂时提高速度</li>
+                <li><span class="food-shield">●</span> 护盾食物 - 暂时免疫碰撞</li>
+                <li><span class="food-shrink">●</span> 缩短食物 - 减少蛇的长度</li>
+            </ul>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>

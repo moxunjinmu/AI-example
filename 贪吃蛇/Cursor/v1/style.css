@@ -1,0 +1,118 @@
+body {
+    font-family: 'Microsoft YaHei', sans-serif;
+    background-color: #f0f0f0;
+    display: flex;
+    justify-content: center;
+    padding: 20px;
+    margin: 0;
+}
+
+.game-container {
+    background-color: white;
+    border-radius: 10px;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    text-align: center;
+    max-width: 500px;
+    width: 100%;
+}
+
+h1 {
+    color: #333;
+    margin-top: 0;
+}
+
+.game-info {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 15px;
+    padding: 10px;
+    background-color: #f8f8f8;
+    border-radius: 5px;
+}
+
+.score-container {
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.speed-container {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+#game-canvas {
+    background-color: #e8e8e8;
+    border: 2px solid #333;
+    border-radius: 5px;
+    margin: 0 auto;
+    display: block;
+}
+
+.controls {
+    margin-top: 15px;
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+}
+
+button {
+    background-color: #4CAF50;
+    border: none;
+    color: white;
+    padding: 10px 15px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    margin: 4px 2px;
+    cursor: pointer;
+    border-radius: 5px;
+    transition: background-color 0.3s;
+}
+
+button:hover {
+    background-color: #45a049;
+}
+
+#pause-btn {
+    background-color: #f39c12;
+}
+
+#pause-btn:hover {
+    background-color: #e67e22;
+}
+
+#restart-btn {
+    background-color: #e74c3c;
+}
+
+#restart-btn:hover {
+    background-color: #c0392b;
+}
+
+input[type="range"] {
+    width: 100px;
+    cursor: pointer;
+}
+
+.instructions {
+    margin-top: 20px;
+    text-align: left;
+    background-color: #f8f8f8;
+    padding: 15px;
+    border-radius: 5px;
+}
+
+.instructions h2 {
+    margin-top: 0;
+    font-size: 18px;
+    color: #333;
+}
+
+.instructions p {
+    margin: 5px 0;
+    font-size: 14px;
+    color: #555;
+}
