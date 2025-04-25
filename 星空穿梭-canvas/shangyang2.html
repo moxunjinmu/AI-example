@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<style>
+    * {
+        padding: 0;
+        margin: 0;
+    }
+
+    body {
+        height: 100%;
+        overflow: hidden;
+
+    }
+</style>
+
+<body>
+    <canvas id="space"></canvas>
+</body>
+<script>
+    const canvas = document.getElementById("space");
+    const c = canvas.getContext("2d");
+    const raf = window.requestAnimationFrame;
+    //配置参数
+    const cfg = {
+        numStars: 10000, //星星数量
+        focalLength: canvas.width * 2, //焦距，影响3D效果
+        mouseInfluence: 0.2, //鼠标影响系数
+        speed: 1, //移动速度
+        maxStarSize: 5, //星星最大尺寸
+        fadeStartZ: 200, //开始淡出的距离
+        fadeEndZ: 100 //完全消失的距离
+    };
+    let stars = [],
+        cx, cy, mx = 0,
+        my = 0;
+    //初始化星星数组
+    function init() {
+        cx = canvas.width / 2;
+        cy = canvas.height / 2;
+        stars = Array.from({
+            length: cfg.numStars
+        }, () => {
+            // 添加20%的彩色星星
+            const hasColor = Math.random() < 0.2;
+            let color = 'white';
+
+            if (hasColor) {
+                // 主要颜色：红色、黄色、蓝色
+                const colorType = Math.random();
+                if (colorType < 0.3) {
+                    color = 'red'; // 红色
+                } else if (colorType < 0.6) {
+                    color = 'yellow'; // 黄色
+                } else if (colorType < 0.9) {
+                    color = 'blue'; // 蓝色
+                } else {
+                    color = 'purple'; // 紫色（较少）
+                }
+            }
+
+            return {
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                z: Math.random() * canvas.width,
+                o: '0.' + Math.floor(Math.random() * 99) + 1, //随机透明度
+                px: 0, //上一帧x坐标
+                py: 0, //上一帧y坐标
+                pz: 0, //上一帧z坐标
+                color: color //星星颜色
+            };
+        });
+    }
+    //使用透视投影公式：屏幕=（世界坐标·中心）*（焦距/z)+中心
+    function pos(x, y, z) {
+        const scale = cfg.focalLength / z; //透视投影公式，z越小，星星越大
+        return {
+            x: (x - cx) * scale + cx,
+            y: (y - cy) * scale + cy,
+            size: Math.min(cfg.maxStarSize, scale) //限制星星大小
+        };
+
+    }
+    //计算星星透明度，实现平滑淡出效果
+    function alpha(z) {
+        if (z <= cfg.fadeStartZ) {
+            //线性插值计算透明度
+            return Math.max(0, Math.min(1, (z - cfg.fadeEndZ) / (cfg.fadeStartZ - cfg.fadeEndZ)));
+        }
+        return 1;
+    }
+    //更新星星位置
+    function move() {
+        stars.forEach(star => {
+            //保存当前位置用于绘制拖尾
+            [star.px, star.py, star.pz] = [star.x, star.y, star.z];
+            //向观察者移动
+            star.z -= cfg.speed;
+            //根据鼠标位置调整星星移动
+            star.x += mx * cfg.mouseInfluence / star.z;
+            star.y += my * cfg.mouseInfluence / star.z;
+            //重置飞出视野的星星
+            if (star.z <= cfg.fadeEndZ) {
+                star.z = canvas.width;
+                star.x = Math.random() * canvas.width;
+                star.y = Math.random() * canvas.height;
+                [star.px, star.py, star.pz] = [star.x, star.y, star.z];
+            }
+        });
+    }
+    //渲染星星和拖尾
+    function draw() {
+        //自适应画布大小
+        if (canvas.width != window.innerWidth || canvas.height != window.innerHeight) {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            init();
+        }
+        //清空画布
+        c.fillStyle = "rgb(0,10,20)";
+        c.fillRect(0, 0, canvas.width, canvas.height);
+        //绘制每颗星星
+        stars.forEach(star => {
+            const curr = pos(star.x, star.y, star.z);
+            const a = alpha(star.z);
+            //高速时绘制拖尾
+            if (cfg.speed > 10) {
+                const prev = pos(star.px, star.py, star.pz);
+                c.beginPath();
+                c.moveTo(prev.x, prev.y);
+                c.lineTo(curr.x, curr.y);
+
+                // 根据星星颜色设置拖尾颜色
+                if (star.color === 'white') {
+                    c.strokeStyle = `rgba(255,255,255,${0.3*a})`;
+                } else if (star.color === 'red') {
+                    c.strokeStyle = `rgba(255,100,100,${0.3*a})`;
+                } else if (star.color === 'yellow') {
+                    c.strokeStyle = `rgba(255,255,100,${0.3*a})`;
+                } else if (star.color === 'blue') {
+                    c.strokeStyle = `rgba(100,100,255,${0.3*a})`;
+                } else if (star.color === 'purple') {
+                    c.strokeStyle = `rgba(200,100,255,${0.3*a})`;
+                }
+
+                c.lineWidth = curr.size;
+                c.stroke();
+            }
+            //绘制星星
+            c.beginPath();
+            c.arc(curr.x, curr.y, curr.size, 0, Math.PI * 2);
+
+            // 根据星星颜色设置填充颜色
+            if (star.color === 'white') {
+                c.fillStyle = `rgba(255,255,255,${parseFloat(star.o)*a})`;
+            } else if (star.color === 'red') {
+                c.fillStyle = `rgba(255,100,100,${parseFloat(star.o)*a})`;
+            } else if (star.color === 'yellow') {
+                c.fillStyle = `rgba(255,255,100,${parseFloat(star.o)*a})`;
+            } else if (star.color === 'blue') {
+                c.fillStyle = `rgba(100,100,255,${parseFloat(star.o)*a})`;
+            } else if (star.color === 'purple') {
+                c.fillStyle = `rgba(200,100,255,${parseFloat(star.o)*a})`;
+            }
+
+            c.fill();
+        });
+    }
+    //动画循环
+    function loop() {
+        raf(loop);
+        move();
+        draw();
+    }
+    //鼠标事件处理
+    document.addEventListener('mousemove', e => {
+        mx = e.clientX - cx;
+        my = e.clientY - cy;
+    });
+    document.addEventListener('wheel', e => {
+        cfg.speed = Math.max(0.1, Math.min(50, cfg.speed - e.deltaY * 0.01));
+    });
+    //启动动画
+    init();
+    loop();
+</script>
+
+</html>

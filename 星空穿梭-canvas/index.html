@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>星际穿梭</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+        body {
+            background-color: #000;
+            color: #fff;
+            font-family: Arial, sans-serif;
+        }
+        canvas {
+            display: block;
+        }
+        .info {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background-color: rgba(0, 0, 0, 0.5);
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 14px;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="starfield"></canvas>
+    <div class="info">
+        <p>移动鼠标：改变视角</p>
+        <p>滚动鼠标滚轮：调整速度</p>
+        <p>速度: <span id="speed-value">5</span></p>
+    </div>
+
+    <script>
+        // 获取Canvas元素和上下文
+        const canvas = document.getElementById('starfield');
+        const ctx = canvas.getContext('2d');
+        const speedValueElement = document.getElementById('speed-value');
+        
+        // 设置Canvas尺寸为窗口大小
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+        
+        // 星星参数
+        const stars = [];
+        const starCount = 2000; // 增加星星数量
+        const backgroundStars = []; // 背景星星（极远处的星星）
+        const backgroundStarCount = 300; // 背景星星数量
+        let speed = 5; // 初始速度
+        const maxSpeed = 20; // 最大速度
+        const minSpeed = 1; // 最小速度
+        
+        // 视角控制参数
+        let mouseX = 0;
+        let mouseY = 0;
+        let tiltX = 0;
+        let tiltY = 0;
+        const tiltFactor = 0.003; // 视角倾斜因子
+        const tiltEasing = 0.05; // 视角平滑过渡因子
+        
+        // 透视投影参数
+        const focalLength = 300; // 焦距
+        
+        // 星星类
+        class Star {
+            constructor() {
+                this.reset();
+                // 初始化时随机分布在空间中
+                this.z = Math.random() * 2000;
+            }
+            
+            // 重置星星位置
+            reset() {
+                // 生成在3D空间中的随机坐标，扩大分布范围
+                this.x = (Math.random() * 4000 - 2000); // 扩大x轴范围
+                this.y = (Math.random() * 4000 - 2000); // 扩大y轴范围
+                this.z = 2000; // 在远处生成新星星
+                
+                // 星星的大小和亮度，随机让少数星星变大
+                const sizeRandom = Math.random();
+                if (sizeRandom > 0.97) { // 3%的星星变大
+                    this.size = 3 + Math.random() * 2;
+                } else {
+                    this.size = 1.5 + Math.random() * 1.5;
+                }
+                this.originalSize = this.size;
+                this.opacity = 1;
+                
+                // 星星的颜色
+                this.color = this.getRandomColor();
+                
+                // 星星的轨迹
+                this.trail = [];
+                this.maxTrailLength = 5; // 轨迹最大长度
+            }
+            
+            // 生成随机星星颜色
+            getRandomColor() {
+                // 主要颜色（蓝色、红色、黄色）
+                const primaryColors = [
+                    '#ffffff', // 白色
+                    '#fffafa', // 雪白色
+                    '#f0f8ff', // 爱丽丝蓝
+                    '#1e90ff', // 道奇蓝
+                    '#4169e1', // 皇家蓝
+                    '#ff6347', // 番茄红
+                    '#ff4500', // 橙红色
+                    '#ffd700', // 金色
+                    '#ffff00', // 黄色
+                    '#f0e68c'  // 卡其色
+                ];
+                
+                // 次要颜色（紫色、绿色、暗红色）
+                const secondaryColors = [
+                    '#9370db', // 中紫色
+                    '#8a2be2', // 紫罗兰色
+                    '#9932cc', // 暗兰花紫
+                    '#32cd32', // 酸橙绿
+                    '#00ff7f', // 春绿色
+                    '#3cb371', // 中海绿色
+                    '#8b0000', // 暗红色
+                    '#800000', // 栗色
+                    '#b22222'  // 火砖色
+                ];
+                
+                // 80%概率选择主要颜色，20%概率选择次要颜色
+                if (Math.random() < 0.8) {
+                    return primaryColors[Math.floor(Math.random() * primaryColors.length)];
+                } else {
+                    return secondaryColors[Math.floor(Math.random() * secondaryColors.length)];
+                }
+            }
+            
+            // 更新星星位置
+            update() {
+                // 保存当前位置用于轨迹
+                if (speed > 10) {
+                    this.trail.push({x: this.x, y: this.y, z: this.z});
+                    if (this.trail.length > this.maxTrailLength) {
+                        this.trail.shift();
+                    }
+                } else {
+                    this.trail = [];
+                }
+                
+                // 根据速度更新Z坐标（向观察者方向移动）
+                this.z -= speed;
+                
+                // 如果星星已经通过观察者，重新生成一个新的星星
+                if (this.z <= 0) {
+                    this.reset();
+                }
+            }
+            
+            // 绘制星星
+            draw() {
+                // 应用透视投影公式计算2D屏幕坐标
+                const scale = focalLength / (focalLength + this.z);
+                const centerX = canvas.width / 2;
+                const centerY = canvas.height / 2;
+                
+                // 应用鼠标倾斜效果
+                const projectedX = centerX + (this.x + tiltX * this.z) * scale;
+                const projectedY = centerY + (this.y + tiltY * this.z) * scale;
+                
+                // 根据距离计算大小和不透明度
+                const projectedSize = this.originalSize * scale;
+                this.opacity = scale * 1.5;
+                if (this.opacity > 1) this.opacity = 1;
+                
+                // 绘制星星轨迹
+                if (this.trail.length > 0 && speed > 10) {
+                    ctx.beginPath();
+                    for (let i = 0; i < this.trail.length; i++) {
+                        const trailScale = focalLength / (focalLength + this.trail[i].z);
+                        const trailX = centerX + (this.trail[i].x + tiltX * this.trail[i].z) * trailScale;
+                        const trailY = centerY + (this.trail[i].y + tiltY * this.trail[i].z) * trailScale;
+                        
+                        if (i === 0) {
+                            ctx.moveTo(trailX, trailY);
+                        } else {
+                            ctx.lineTo(trailX, trailY);
+                        }
+                    }
+                    ctx.lineTo(projectedX, projectedY);
+                    ctx.strokeStyle = this.color.replace(')', `, ${this.opacity * 0.3})`);
+                    ctx.lineWidth = projectedSize * 0.6;
+                    ctx.stroke();
+                }
+                
+                // 绘制星星
+                ctx.beginPath();
+                ctx.arc(projectedX, projectedY, projectedSize, 0, Math.PI * 2);
+                ctx.fillStyle = this.color.replace(')', `, ${this.opacity})`);
+                ctx.fill();
+            }
+        }
+        
+        // 背景星星类（极远处的固定星星）
+        class BackgroundStar {
+            constructor() {
+                // 随机位置
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                
+                // 随机大小和亮度
+                this.size = 0.5 + Math.random() * 1;
+                this.maxOpacity = 0.5 + Math.random() * 0.5;
+                this.opacity = this.maxOpacity;
+                
+                // 闪烁参数
+                this.twinkleSpeed = 0.02 + Math.random() * 0.05;
+                this.twinkleDirection = Math.random() > 0.5 ? 1 : -1;
+                
+                // 随机颜色，主要是白色和浅色调
+                this.color = this.getRandomColor();
+            }
+            
+            // 背景星星的颜色
+            getRandomColor() {
+                const colors = [
+                    '#ffffff', // 白色
+                    '#fffafa', // 雪白色
+                    '#f0f8ff', // 爱丽丝蓝
+                    '#fffacd', // 柠檬绸
+                    '#e6e6fa', // 淡紫色
+                    '#f8f8ff'  // 幽灵白
+                ];
+                return colors[Math.floor(Math.random() * colors.length)];
+            }
+            
+            // 更新背景星星（闪烁效果）
+            update() {
+                // 更新不透明度以创建闪烁效果
+                this.opacity += this.twinkleDirection * this.twinkleSpeed;
+                
+                // 当达到最大或最小不透明度时改变方向
+                if (this.opacity >= this.maxOpacity) {
+                    this.opacity = this.maxOpacity;
+                    this.twinkleDirection = -1;
+                } else if (this.opacity <= 0.1) {
+                    this.opacity = 0.1;
+                    this.twinkleDirection = 1;
+                }
+            }
+            
+            // 绘制背景星星
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fillStyle = this.color.replace(')', `, ${this.opacity})`);
+                ctx.fill();
+            }
+        }
+        
+        // 初始化星星
+        function initStars() {
+            // 初始化主要星星
+            for (let i = 0; i < starCount; i++) {
+                stars.push(new Star());
+            }
+            
+            // 初始化背景星星
+            for (let i = 0; i < backgroundStarCount; i++) {
+                backgroundStars.push(new BackgroundStar());
+            }
+        }
+        
+        // 动画循环
+        function animate() {
+            // 清除画布
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // 平滑过渡视角倾斜
+            tiltX += (mouseX * tiltFactor - tiltX) * tiltEasing;
+            tiltY += (mouseY * tiltFactor - tiltY) * tiltEasing;
+            
+            // 更新并绘制背景星星（极远处的星星）
+            for (let i = 0; i < backgroundStars.length; i++) {
+                backgroundStars[i].update();
+                backgroundStars[i].draw();
+            }
+            
+            // 更新并绘制所有主要星星
+            for (let i = 0; i < stars.length; i++) {
+                stars[i].update();
+                stars[i].draw();
+            }
+            
+            // 继续动画循环
+            requestAnimationFrame(animate);
+        }
+        
+        // 鼠标移动事件监听
+        function handleMouseMove(e) {
+            // 计算鼠标位置相对于画布中心的偏移
+            mouseX = e.clientX - canvas.width / 2;
+            mouseY = e.clientY - canvas.height / 2;
+        }
+        
+        // 鼠标滚轮事件监听
+        function handleMouseWheel(e) {
+            // 根据滚轮方向调整速度
+            if (e.deltaY < 0) {
+                // 向上滚动，增加速度
+                speed = Math.min(speed + 1, maxSpeed);
+            } else {
+                // 向下滚动，减少速度
+                speed = Math.max(speed - 1, minSpeed);
+            }
+            
+            // 更新速度显示
+            speedValueElement.textContent = speed;
+        }
+        
+        // 触摸设备支持
+        function handleTouchMove(e) {
+            if (e.touches.length > 0) {
+                // 防止触摸时页面滚动
+                e.preventDefault();
+                
+                // 获取第一个触摸点的位置
+                const touch = e.touches[0];
+                mouseX = touch.clientX - canvas.width / 2;
+                mouseY = touch.clientY - canvas.height / 2;
+            }
+        }
+        
+        // 添加事件监听器
+        canvas.addEventListener('mousemove', handleMouseMove);
+        canvas.addEventListener('wheel', handleMouseWheel);
+        canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+        
+        // 初始化并开始动画
+        initStars();
+        animate();
+    </script>
+</body>
+</html>
