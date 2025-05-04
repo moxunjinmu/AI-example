@@ -1,0 +1,2640 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="车评家 - 专业的紧凑级车试驾数据收集工具"
+    />
+    <meta name="theme-color" content="#ffffff" id="theme-color" />
+    <title>车评家 - 专业的紧凑级车试驾数据收集工具</title>
+
+    <!-- 预连接关键域名 -->
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    <link rel="preconnect" href="https://cdn.tailwindcss.com" crossorigin>
+    <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
+
+    <!-- PWA 相关配置 -->
+    <link rel="manifest" href="manifest.json" />
+    <link rel="apple-touch-icon" href="icons/placeholder.svg" />
+
+    <!-- 关键CSS内联（首屏渲染必需） -->
+    <style>
+      /* 基础样式 - 首屏必需 */
+      body {
+        margin: 0;
+        background-color: #f9fafb;
+        color: #111827;
+        transition: background-color 0.2s, color 0.2s;
+      }
+      .dark body {
+        background-color: #111827;
+        color: #f9fafb;
+      }
+      #app {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+      header {
+        background-color: white;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        position: sticky;
+        top: 0;
+        z-index: 40;
+      }
+      .dark header {
+        background-color: #1f2937;
+      }
+      .container {
+        width: 100%;
+        margin: 0 auto;
+        padding: 0 1rem;
+      }
+      .flex {display: flex;}
+      .items-center {align-items: center;}
+      .justify-between {justify-content: space-between;}
+      .text-xl {font-size: 1.25rem;}
+      .font-bold {font-weight: 700;}
+      .space-x-3 > * + * {margin-left: 0.75rem;}
+      
+      /* 骨架屏样式 */
+      .skeleton-loader {padding: 1rem;}
+      .animate-pulse {
+        animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+      }
+      @keyframes pulse {
+        0%, 100% {opacity: 1;}
+        50% {opacity: .5;}
+      }
+      
+      /* 加载指示器和提示样式 - 首屏必需 */
+      .loader {
+        border-top-color: #0ea5e9;
+        -webkit-animation: spinner 1.5s linear infinite;
+        animation: spinner 1.5s linear infinite;
+      }
+      @keyframes spinner {
+        0% {transform: rotate(0deg);}
+        100% {transform: rotate(360deg);}
+      }
+    </style>
+
+    <!-- 引入 TailwindCSS (优化配置) -->
+    <script src="https://cdn.tailwindcss.com?minify=true"></script>
+    <script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              primary: {
+                50: "#f0f9ff",
+                100: "#e0f2fe",
+                200: "#bae6fd",
+                300: "#7dd3fc",
+                400: "#38bdf8",
+                500: "#0ea5e9",
+                600: "#0284c7",
+                700: "#0369a1",
+                800: "#075985",
+                900: "#0c4a6e",
+                950: "#082f49",
+              },
+            },
+          },
+        },
+      };
+    </script>
+
+    <!-- 引入 jQuery (核心依赖) -->
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.4/dist/jquery.min.js"></script>
+
+    <!-- 非核心库通过动态加载 - 不再直接引入 -->
+    <!-- <script src="https://cdn.jsdelivr.net/npm/highcharts@10.3.3/highcharts.min.js"></script> -->
+    <!-- <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script> -->
+    <!-- <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script> -->
+
+    <style>
+      /* 自定义样式 */
+      .thumb-zone {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        z-index: 50;
+      }
+
+      /* 滑块样式 */
+      input[type="range"] {
+        -webkit-appearance: none;
+        width: 100%;
+        height: 8px;
+        border-radius: 5px;
+        background: #d3d3d3;
+        outline: none;
+      }
+
+      input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 25px;
+        height: 25px;
+        border-radius: 50%;
+        background: #0ea5e9;
+        cursor: pointer;
+      }
+
+      input[type="range"]::-moz-range-thumb {
+        width: 25px;
+        height: 25px;
+        border-radius: 50%;
+        background: #0ea5e9;
+        cursor: pointer;
+      }
+
+      /* 星级评分样式 */
+      .star-rating {
+        font-size: 0;
+      }
+
+      .star-rating span {
+        display: inline-block;
+        font-size: 1.5rem;
+        padding: 0 0.1rem;
+        cursor: pointer;
+      }
+
+      /* 暗色模式适配 */
+      .dark .star-rating .star-filled {
+        color: #fbbf24;
+      }
+
+      .star-rating .star-filled {
+        color: #f59e0b;
+      }
+
+      .star-rating .star-empty {
+        color: #d1d5db;
+      }
+
+      /* 修复移动端底部按钮可见性问题 */
+      .nav-buttons {
+        margin-bottom: 80px; /* 确保在移动设备上按钮不被底部导航栏遮挡 */
+      }
+
+      /* 修复移动端表单元素样式 */
+      @media (max-width: 640px) {
+        input,
+        select,
+        textarea {
+          font-size: 16px !important; /* 防止iOS自动缩放 */
+        }
+
+        /* 确保移动端按钮足够大，易于点击 */
+        button {
+          min-height: 44px;
+        }
+
+        /* 调整移动端的内容间距 */
+        .step-content {
+          padding: 1rem !important;
+        }
+
+        /* 确保滑块在移动端可以正常操作 */
+        input[type="range"]::-webkit-slider-thumb {
+          width: 28px;
+          height: 28px;
+        }
+
+        input[type="range"]::-moz-range-thumb {
+          width: 28px;
+          height: 28px;
+        }
+      }
+
+      /* 修复iOS Safari底部安全区域问题 */
+      @supports (padding-bottom: env(safe-area-inset-bottom)) {
+        .thumb-zone {
+          padding-bottom: env(safe-area-inset-bottom);
+        }
+
+        .content-area {
+          padding-bottom: calc(120px + env(safe-area-inset-bottom));
+        }
+      }
+    </style>
+  </head>
+  <body
+    class="bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-gray-100 transition-colors duration-200"
+  >
+    <!-- 应用容器 -->
+    <div id="app" class="min-h-screen flex flex-col">
+      <!-- 顶部导航栏 -->
+      <header class="bg-white dark:bg-gray-800 shadow-md sticky top-0 z-40">
+        <div
+          class="container mx-auto px-4 py-3 flex justify-between items-center"
+        >
+          <h1 class="text-xl font-bold text-primary-600 dark:text-primary-400">
+            车评家
+          </h1>
+          <div class="flex items-center space-x-3">
+            <button
+              id="theme-toggle"
+              class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"
+            >
+              <!-- 亮色模式图标 -->
+              <svg
+                id="light-icon"
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-6 w-6 text-yellow-500 hidden"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"
+                />
+              </svg>
+              <!-- 暗色模式图标 -->
+              <svg
+                id="dark-icon"
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-6 w-6 text-gray-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"
+                />
+              </svg>
+            </button>
+            <button id="network-status" class="p-2 rounded-full">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-6 w-6 text-green-500"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M5 12h14M12 5l7 7-7 7"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <!-- 主内容区域 -->
+      <main class="flex-grow container mx-auto px-4 py-6 content-area">
+        <!-- 视图容器 - 添加默认骨架屏 -->
+        <div id="view-container">
+          <div class="skeleton-loader">
+            <div class="animate-pulse bg-gray-200 dark:bg-gray-700 h-8 w-3/4 mb-4 rounded"></div>
+            <div class="animate-pulse bg-gray-200 dark:bg-gray-700 h-10 w-40 mb-6 rounded-lg"></div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div class="animate-pulse bg-gray-200 dark:bg-gray-700 h-64 rounded-lg"></div>
+              <div class="animate-pulse bg-gray-200 dark:bg-gray-700 h-64 rounded-lg"></div>
+              <div class="animate-pulse bg-gray-200 dark:bg-gray-700 h-64 rounded-lg"></div>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <!-- 底部导航栏 - 移动端优化 -->
+      <nav
+        class="thumb-zone bg-white dark:bg-gray-800 shadow-lg border-t border-gray-200 dark:border-gray-700"
+      >
+        <div class="container mx-auto px-4">
+          <div class="flex justify-around py-3">
+            <button
+              class="nav-btn flex flex-col items-center p-2 rounded-lg"
+              data-view="home"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+                />
+              </svg>
+              <span class="text-xs mt-1">首页</span>
+            </button>
+            <button
+              class="nav-btn flex flex-col items-center p-2 rounded-lg"
+              data-view="compare"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                />
+              </svg>
+              <span class="text-xs mt-1">对比</span>
+            </button>
+            <button
+              class="nav-btn flex flex-col items-center p-2 rounded-lg"
+              data-view="settings"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+                />
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                />
+              </svg>
+              <span class="text-xs mt-1">设置</span>
+            </button>
+          </div>
+        </div>
+      </nav>
+
+      <!-- 加载指示器 -->
+      <div
+        id="loader"
+        class="fixed inset-0 flex items-center justify-center bg-white bg-opacity-75 dark:bg-gray-900 dark:bg-opacity-75 z-50 hidden"
+      >
+        <div
+          class="loader border-4 border-gray-200 rounded-full w-12 h-12"
+        ></div>
+      </div>
+
+      <!-- 提示消息 -->
+      <div
+        id="toast"
+        class="fixed bottom-20 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-4 py-2 rounded-lg shadow-lg z-50 hidden"
+      >
+        消息提示
+      </div>
+    </div>
+
+    <!-- 应用脚本 -->
+    <script>
+      // 确保DOM完全加载
+      document.addEventListener('DOMContentLoaded', function() {
+        // 确保jQuery加载完成
+        if (typeof jQuery === 'undefined') {
+          console.error('jQuery未加载，尝试重新加载...');
+          var script = document.createElement('script');
+          script.src = 'https://cdn.jsdelivr.net/npm/jquery@3.6.4/dist/jquery.min.js';
+          script.onload = initApp;
+          document.head.appendChild(script);
+          return;
+        }
+        
+        // 初始化应用
+        initApp();
+      });
+      
+      // 辅助函数 - 动态加载脚本
+      function loadScript(url) {
+        return new Promise((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = url;
+          script.onload = resolve;
+          script.onerror = reject;
+          document.head.appendChild(script);
+        });
+      }
+
+      // 辅助函数 - 节流
+      function throttle(func, delay) {
+        let lastCall = 0;
+        return function(...args) {
+          const now = new Date().getTime();
+          if (now - lastCall < delay) {
+            return;
+          }
+          lastCall = now;
+          return func.apply(this, args);
+        };
+      }
+
+      // 辅助函数 - 防抖
+      function debounce(func, delay) {
+        let timer;
+        return function(...args) {
+          clearTimeout(timer);
+          timer = setTimeout(() => {
+            func.apply(this, args);
+          }, delay);
+        };
+      }
+
+      // 图片懒加载初始化
+      function initLazyLoading() {
+        const lazyImages = document.querySelectorAll('.lazyload');
+        
+        if ('IntersectionObserver' in window) {
+          const imageObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+              if (entry.isIntersecting) {
+                const img = entry.target;
+                img.src = img.dataset.src;
+                img.classList.remove('lazyload');
+                imageObserver.unobserve(img);
+              }
+            });
+          });
+          
+          lazyImages.forEach(img => {
+            imageObserver.observe(img);
+          });
+        } else {
+          // 降级处理
+          lazyImages.forEach(img => {
+            img.src = img.dataset.src;
+          });
+        }
+      }
+
+      // 性能优化 - 添加评分缓存
+      const scoreCache = new Map();
+
+      // 应用状态管理
+      const AppState = {
+        currentView: "home",
+        cars: [],
+        currentCar: null,
+        currentStep: 0,
+        compareList: [],
+        settings: {
+          darkMode: false,
+          autoSave: true,
+          offlineMode: true,
+        },
+      };
+
+      // 初始化应用
+      function initApp() {
+        console.log("应用初始化中...");
+        
+        // 加载保存的数据
+        loadData();
+
+        // 初始化主题
+        initTheme();
+
+        // 注册Service Worker
+        registerServiceWorker();
+
+        // 设置网络状态监听
+        setupNetworkStatus();
+
+        // 导航按钮点击事件
+        $(".nav-btn").on("click", function () {
+          const view = $(this).data("view");
+          navigateTo(view);
+        });
+
+        // 主题切换按钮点击事件
+        $("#theme-toggle").on("click", function () {
+          toggleTheme();
+        });
+
+        // 初始加载首页视图
+        navigateTo("home");
+
+        // 检测设备类型并调整UI
+        adjustUIForDevice();
+
+        // 监听窗口大小变化，动态调整UI (使用节流)
+        $(window).on("resize", throttle(function () {
+          adjustUIForDevice();
+        }, 200));
+      }
+
+      // 根据设备类型调整UI
+      function adjustUIForDevice() {
+        const isMobile = window.innerWidth < 768;
+
+        if (isMobile) {
+          // 移动设备特定调整
+          $(".content-area").addClass("pb-32"); // 增加底部内容区域的padding
+        } else {
+          // 桌面设备特定调整
+          $(".content-area").removeClass("pb-32");
+        }
+      }
+
+      // 加载保存的数据
+      function loadData() {
+        try {
+          // 加载车辆数据
+          const savedCars = localStorage.getItem("carEvaluator_cars");
+          if (savedCars) {
+            AppState.cars = JSON.parse(savedCars);
+          }
+
+          // 加载设置
+          const savedSettings = localStorage.getItem("carEvaluator_settings");
+          if (savedSettings) {
+            AppState.settings = {
+              ...AppState.settings,
+              ...JSON.parse(savedSettings),
+            };
+          }
+        } catch (error) {
+          console.error("加载数据失败:", error);
+          showToast("加载数据失败，将使用默认设置");
+        }
+      }
+
+      // 保存数据
+      function saveData() {
+        try {
+          localStorage.setItem(
+            "carEvaluator_cars",
+            JSON.stringify(AppState.cars)
+          );
+          localStorage.setItem(
+            "carEvaluator_settings",
+            JSON.stringify(AppState.settings)
+          );
+        } catch (error) {
+          console.error("保存数据失败:", error);
+          showToast("保存数据失败，请检查浏览器存储空间");
+        }
+      }
+
+      // 初始化主题
+      function initTheme() {
+        if (AppState.settings.darkMode) {
+          document.documentElement.classList.add("dark");
+          $("#light-icon").removeClass("hidden");
+          $("#dark-icon").addClass("hidden");
+          $("#theme-color").attr("content", "#1f2937");
+        } else {
+          document.documentElement.classList.remove("dark");
+          $("#light-icon").addClass("hidden");
+          $("#dark-icon").removeClass("hidden");
+          $("#theme-color").attr("content", "#ffffff");
+        }
+      }
+
+      // 切换主题
+      function toggleTheme() {
+        AppState.settings.darkMode = !AppState.settings.darkMode;
+        initTheme();
+        saveData();
+      }
+
+      // 注册Service Worker
+      function registerServiceWorker() {
+        if ("serviceWorker" in navigator) {
+          window.addEventListener('load', function() {
+            navigator.serviceWorker
+              .register("service-worker.js")
+              .then((registration) => {
+                console.log("Service Worker 注册成功:", registration);
+                
+                // 检查更新
+                registration.addEventListener('updatefound', () => {
+                  const newWorker = registration.installing;
+                  newWorker.addEventListener('statechange', () => {
+                    if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                      showToast('应用已更新，请刷新页面获取最新版本');
+                    }
+                  });
+                });
+              })
+              .catch((error) => {
+                console.error("Service Worker 注册失败:", error);
+              });
+            
+            // 网络状态变化时重新检查资源
+            window.addEventListener('online', () => {
+              navigator.serviceWorker.ready.then(registration => {
+                registration.update();
+              });
+            });
+          });
+          
+          // 添加CDN故障时的本地备份检测
+          setTimeout(function checkCdnAndFallback() {
+            // 检查jQuery可用性
+            if (typeof jQuery === 'undefined') {
+              console.warn('CDN加载jQuery失败，尝试使用本地备份');
+              loadScript('/js/libs/jquery.min.js');
+            }
+          }, 5000);
+        }
+      }
+
+      // 设置网络状态监听
+      function setupNetworkStatus() {
+        const updateNetworkStatus = () => {
+          if (navigator.onLine) {
+            $("#network-status svg")
+              .removeClass("text-red-500")
+              .addClass("text-green-500");
+          } else {
+            $("#network-status svg")
+              .removeClass("text-green-500")
+              .addClass("text-red-500");
+            showToast("您当前处于离线状态，数据将保存在本地");
+          }
+        };
+
+        window.addEventListener("online", updateNetworkStatus);
+        window.addEventListener("offline", updateNetworkStatus);
+        updateNetworkStatus();
+      }
+
+      // 显示加载指示器
+      function showLoader() {
+        $("#loader").removeClass("hidden");
+      }
+
+      // 隐藏加载指示器
+      function hideLoader() {
+        $("#loader").addClass("hidden");
+      }
+
+      // 显示提示消息
+      function showToast(message, duration = 3000) {
+        $("#toast").text(message).removeClass("hidden");
+        setTimeout(() => {
+          $("#toast").addClass("hidden");
+        }, duration);
+      }
+
+      // 导航到指定视图
+      function navigateTo(view, params = {}) {
+        // 更新当前视图
+        AppState.currentView = view;
+
+        // 高亮当前导航按钮
+        $(".nav-btn").removeClass("text-primary-600 dark:text-primary-400");
+        $(`.nav-btn[data-view="${view}"]`).addClass(
+          "text-primary-600 dark:text-primary-400"
+        );
+
+        // 显示加载指示器
+        showLoader();
+
+        // 根据视图加载对应内容
+        switch (view) {
+          case "home":
+            renderHomeView();
+            break;
+          case "record":
+            renderRecordView(params);
+            break;
+          case "compare":
+            renderCompareView();
+            break;
+          case "settings":
+            renderSettingsView();
+            break;
+          default:
+            renderHomeView();
+        }
+
+        // 隐藏加载指示器
+        setTimeout(hideLoader, 300);
+
+        // 滚动到页面顶部
+        window.scrollTo(0, 0);
+      }
+
+      // 渲染首页视图
+      function renderHomeView() {
+        // 使用DocumentFragment减少重排
+        const fragment = document.createDocumentFragment();
+        const container = document.createElement('div');
+        container.className = 'space-y-6';
+        
+        let html = `
+          <div class="flex justify-between items-center">
+            <h2 class="text-2xl font-bold">我的车辆评测</h2>
+            <button id="add-car-btn" class="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg flex items-center">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+              </svg>
+              添加车型
+            </button>
+          </div>
+          
+          <div class="car-list grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        `;
+
+        if (AppState.cars.length === 0) {
+          html += `
+            <div class="col-span-full text-center py-12 bg-gray-100 dark:bg-gray-800 rounded-lg">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+              <p class="mt-4 text-gray-600 dark:text-gray-400">暂无车辆评测记录</p>
+              <button id="empty-add-car-btn" class="mt-4 bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg">
+                开始添加车型
+              </button>
+            </div>
+          `;
+        } else {
+          AppState.cars.forEach((car, index) => {
+            // 使用缓存计算总评分
+            const cacheKey = car.id + JSON.stringify(Object.values(car.ratings).map(r => r.score || 5));
+            let totalScore;
+            
+            if (scoreCache.has(cacheKey)) {
+              totalScore = scoreCache.get(cacheKey);
+            } else {
+              totalScore = calculateTotalScore(car);
+              scoreCache.set(cacheKey, totalScore);
+            }
+            
+            const scorePercentage = Math.round((totalScore / 10) * 100);
+
+            html += `
+            <div class="car-card bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
+              <div class="h-40 bg-gray-200 dark:bg-gray-700 relative">
+                ${
+                  car.images && car.images.length > 0
+                    ? `<img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1'%3E%3C/svg%3E" 
+                           data-src="${car.images[0]}" 
+                           loading="lazy" 
+                           class="lazyload w-full h-full object-cover"
+                           alt="${car.brand} ${car.model}">`
+                    : `<div class="flex items-center justify-center h-full">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                    </div>`
+                }
+                <div class="absolute top-2 right-2 bg-white dark:bg-gray-800 rounded-full p-2 shadow">
+                  <div class="text-center">
+                    <span class="text-lg font-bold text-primary-600 dark:text-primary-400">${totalScore.toFixed(
+                      1
+                    )}</span>
+                    <span class="text-xs block">评分</span>
+                  </div>
+                </div>
+              </div>
+              <div class="p-4">
+                <h3 class="text-lg font-bold">${car.brand} ${car.model}</h3>
+                <p class="text-sm text-gray-600 dark:text-gray-400">${
+                  car.version || "未指定版本"
+                }</p>
+                <div class="mt-2 flex justify-between items-center">
+                  <span class="text-sm text-gray-600 dark:text-gray-400">
+                    ¥${
+                      car.price ? car.price.toLocaleString("zh-CN") : "暂无价格"
+                    }
+                  </span>
+                  <span class="text-xs text-gray-500 dark:text-gray-400">
+                    ${
+                      car.testDate
+                        ? new Date(car.testDate).toLocaleDateString("zh-CN")
+                        : "未记录日期"
+                    }
+                  </span>
+                </div>
+                <div class="mt-3 flex justify-between">
+                  <button class="edit-car-btn text-sm bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 px-3 py-1 rounded" data-index="${index}">
+                    编辑
+                  </button>
+                  <div class="flex space-x-2">
+                    <button class="compare-car-btn text-sm bg-primary-100 hover:bg-primary-200 dark:bg-primary-900 dark:hover:bg-primary-800 text-primary-700 dark:text-primary-300 px-3 py-1 rounded" data-index="${index}">
+                      对比
+                    </button>
+                    <button class="delete-car-btn text-sm bg-red-100 hover:bg-red-200 dark:bg-red-900 dark:hover:bg-red-800 text-red-700 dark:text-red-300 px-3 py-1 rounded" data-index="${index}">
+                      删除
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          `;
+          });
+        }
+
+        html += `
+          </div>
+        `;
+        
+        container.innerHTML = html;
+        fragment.appendChild(container);
+        
+        // 一次性更新DOM
+        const viewContainer = document.getElementById('view-container');
+        viewContainer.innerHTML = '';
+        viewContainer.appendChild(fragment);
+
+        // 添加车型按钮点击事件
+        $("#add-car-btn, #empty-add-car-btn").on("click", function () {
+          AppState.currentCar = {
+            id: Date.now().toString(),
+            brand: "",
+            model: "",
+            version: "",
+            price: null,
+            discountPrice: null,
+            testDate: new Date().toISOString().split("T")[0],
+            testLocation: "",
+            salesConsultant: "",
+            images: [],
+            notes: "",
+            ratings: {
+              exterior: { score: 5, pros: [], cons: [] },
+              interior: { score: 5, pros: [], cons: [] },
+              space: { score: 5, pros: [], cons: [] },
+              power: { score: 5, pros: [], cons: [] },
+              handling: { score: 5, pros: [], cons: [] },
+              nvh: { score: 5, pros: [], cons: [] },
+              intelligence: { score: 5, pros: [], cons: [] },
+              fuelConsumption: { score: 5, pros: [], cons: [] },
+            },
+            overallComment: "",
+          };
+          AppState.currentStep = 0;
+          navigateTo("record", { isNew: true });
+        });
+
+        // 编辑车型按钮点击事件
+        $(".edit-car-btn").on("click", function () {
+          const index = $(this).data("index");
+          AppState.currentCar = { ...AppState.cars[index] };
+          AppState.currentStep = 0;
+          navigateTo("record", { isNew: false });
+        });
+
+        // 删除车型按钮点击事件
+        $(".delete-car-btn").on("click", function () {
+          const index = $(this).data("index");
+          if (confirm("确定要删除这条评测记录吗？")) {
+            AppState.cars.splice(index, 1);
+            saveData();
+            renderHomeView();
+            showToast("评测记录已删除");
+          }
+        });
+
+        // 添加到对比列表按钮点击事件
+        $(".compare-car-btn").on("click", function () {
+          const index = $(this).data("index");
+          const car = AppState.cars[index];
+
+          // 检查是否已在对比列表中
+          const existingIndex = AppState.compareList.findIndex(
+            (c) => c.id === car.id
+          );
+          if (existingIndex !== -1) {
+            showToast("该车型已在对比列表中");
+            return;
+          }
+
+          // 添加到对比列表
+          AppState.compareList.push(car);
+          showToast("已添加到对比列表");
+        });
+        
+        // 初始化图片懒加载
+        setTimeout(initLazyLoading, 0);
+      }
+
+      // 渲染记录视图
+      function renderRecordView(params = {}) {
+        const isNew = params.isNew !== undefined ? params.isNew : true;
+        const car = AppState.currentCar;
+        const step = AppState.currentStep;
+
+        // 步骤标题和描述
+        const steps = [
+          { title: "基本信息", desc: "填写车辆的基本信息" },
+          { title: "外观评测", desc: "评价车辆的外观设计和做工" },
+          { title: "内饰评测", desc: "评价车辆的内饰设计和材质" },
+          { title: "空间表现", desc: "评价车辆的乘坐空间和储物空间" },
+          { title: "动力系统", desc: "评价车辆的动力性能和平顺性" },
+          { title: "操控性能", desc: "评价车辆的转向和悬挂表现" },
+          { title: "NVH表现", desc: "评价车辆的噪音、震动和声音表现" },
+          { title: "智能系统", desc: "评价车辆的智能化配置和功能" },
+          { title: "油耗表现", desc: "记录车辆的实际油耗或能耗" },
+          { title: "总结评价", desc: "对车辆进行综合评价" },
+        ];
+
+        let html = `
+        <div class="space-y-6">
+          <div class="flex justify-between items-center">
+            <h2 class="text-2xl font-bold">${
+              isNew ? "添加新车型" : "编辑车型"
+            }</h2>
+            <div class="text-sm text-gray-500">步骤 ${step + 1}/${
+          steps.length
+        }</div>
+          </div>
+          
+          <!-- 步骤进度条 -->
+          <div class="relative pt-1">
+            <div class="overflow-hidden h-2 text-xs flex rounded bg-gray-200 dark:bg-gray-700">
+              <div style="width:${
+                (step / (steps.length - 1)) * 100
+              }%" class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-primary-500"></div>
+            </div>
+          </div>
+          
+          <!-- 步骤标题 -->
+          <div class="text-center mb-6">
+            <h3 class="text-xl font-semibold">${steps[step].title}</h3>
+            <p class="text-gray-600 dark:text-gray-400">${steps[step].desc}</p>
+          </div>
+          
+          <!-- 步骤内容 -->
+          <div class="step-content bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+      `;
+
+        // 根据当前步骤渲染不同的表单内容
+        switch (step) {
+          case 0: // 基本信息
+            html += `
+            <div class="space-y-4">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="brand">
+                    品牌 <span class="text-red-500">*</span>
+                  </label>
+                  <input type="text" id="brand" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white" value="${
+                    car.brand || ""
+                  }" required>
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="model">
+                    车型 <span class="text-red-500">*</span>
+                  </label>
+                  <input type="text" id="model" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white" value="${
+                    car.model || ""
+                  }" required>
+                </div>
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="version">
+                  配置版本
+                </label>
+                <input type="text" id="version" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white" value="${
+                  car.version || ""
+                }">
+              </div>
+              
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="price">
+                    指导价（万元）
+                  </label>
+                  <input type="number" id="price" step="0.01" min="0" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white" value="${
+                    car.price || ""
+                  }">
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="discountPrice">
+                    优惠后价格（万元）
+                  </label>
+                  <input type="number" id="discountPrice" step="0.01" min="0" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white" value="${
+                    car.discountPrice || ""
+                  }">
+                </div>
+              </div>
+              
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="testDate">
+                    试驾日期
+                  </label>
+                  <input type="date" id="testDate" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white" value="${
+                    car.testDate || ""
+                  }">
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="testLocation">
+                    试驾地点
+                  </label>
+                  <input type="text" id="testLocation" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white" value="${
+                    car.testLocation || ""
+                  }">
+                </div>
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="salesConsultant">
+                  销售顾问
+                </label>
+                <input type="text" id="salesConsultant" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white" value="${
+                  car.salesConsultant || ""
+                }">
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  车辆照片
+                </label>
+                <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 dark:border-gray-600 border-dashed rounded-md">
+                  <div class="space-y-1 text-center">
+                    <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
+                      <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                    <div class="flex text-sm text-gray-600 dark:text-gray-400">
+                      <label for="file-upload" class="relative cursor-pointer bg-white dark:bg-gray-700 rounded-md font-medium text-primary-600 dark:text-primary-400 hover:text-primary-500 focus-within:outline-none">
+                        <span>上传照片</span>
+                        <input id="file-upload" name="file-upload" type="file" accept="image/*" class="sr-only" multiple>
+                      </label>
+                      <p class="pl-1">或拖放图片到此处</p>
+                    </div>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">
+                      PNG, JPG, GIF 最大 10MB
+                    </p>
+                  </div>
+                </div>
+                <div id="image-preview" class="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4">
+                  ${
+                    car.images && car.images.length > 0
+                      ? car.images
+                          .map(
+                            (img, idx) => `
+                      <div class="relative">
+                        <img src="${img}" alt="车辆照片" class="h-24 w-full object-cover rounded-md">
+                        <button type="button" class="remove-image absolute top-1 right-1 bg-red-500 text-white rounded-full p-1" data-index="${idx}">
+                          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+                    `
+                          )
+                          .join("")
+                      : ""
+                  }
+                </div>
+              </div>
+            </div>
+          `;
+            break;
+
+          case 1: // 外观评测
+            html += renderRatingSection("exterior", "外观评测", car);
+            break;
+
+          case 2: // 内饰评测
+            html += renderRatingSection("interior", "内饰评测", car);
+            break;
+
+          case 3: // 空间表现
+            html += renderRatingSection("space", "空间表现", car);
+            break;
+
+          case 4: // 动力系统
+            html += renderRatingSection("power", "动力系统", car);
+            break;
+
+          case 5: // 操控性能
+            html += renderRatingSection("handling", "操控性能", car);
+            break;
+
+          case 6: // NVH表现
+            html += renderRatingSection("nvh", "NVH表现", car);
+            break;
+
+          case 7: // 智能系统
+            html += renderRatingSection("intelligence", "智能系统", car);
+            break;
+
+          case 8: // 油耗表现
+            html += renderRatingSection("fuelConsumption", "油耗表现", car);
+            break;
+
+          case 9: // 总结评价
+            html += `
+            <div class="space-y-6">
+              <div>
+                <h4 class="text-lg font-medium mb-2">综合评分</h4>
+                <div class="bg-gray-100 dark:bg-gray-700 p-4 rounded-lg">
+                  <div class="text-center">
+                    <span class="text-4xl font-bold text-primary-600 dark:text-primary-400">${calculateTotalScore(
+                      car
+                    ).toFixed(1)}</span>
+                    <span class="text-lg">/10</span>
+                  </div>
+                  <div class="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="text-center">
+                      <div class="text-sm text-gray-600 dark:text-gray-400">外观</div>
+                      <div class="font-semibold">${car.ratings.exterior.score.toFixed(
+                        1
+                      )}</div>
+                    </div>
+                    <div class="text-center">
+                      <div class="text-sm text-gray-600 dark:text-gray-400">内饰</div>
+                      <div class="font-semibold">${car.ratings.interior.score.toFixed(
+                        1
+                      )}</div>
+                    </div>
+                    <div class="text-center">
+                      <div class="text-sm text-gray-600 dark:text-gray-400">空间</div>
+                      <div class="font-semibold">${car.ratings.space.score.toFixed(
+                        1
+                      )}</div>
+                    </div>
+                    <div class="text-center">
+                      <div class="text-sm text-gray-600 dark:text-gray-400">动力</div>
+                      <div class="font-semibold">${car.ratings.power.score.toFixed(
+                        1
+                      )}</div>
+                    </div>
+                    <div class="text-center">
+                      <div class="text-sm text-gray-600 dark:text-gray-400">操控</div>
+                      <div class="font-semibold">${car.ratings.handling.score.toFixed(
+                        1
+                      )}</div>
+                    </div>
+                    <div class="text-center">
+                      <div class="text-sm text-gray-600 dark:text-gray-400">NVH</div>
+                      <div class="font-semibold">${car.ratings.nvh.score.toFixed(
+                        1
+                      )}</div>
+                    </div>
+                    <div class="text-center">
+                      <div class="text-sm text-gray-600 dark:text-gray-400">智能</div>
+                      <div class="font-semibold">${car.ratings.intelligence.score.toFixed(
+                        1
+                      )}</div>
+                    </div>
+                    <div class="text-center">
+                      <div class="text-sm text-gray-600 dark:text-gray-400">油耗</div>
+                      <div class="font-semibold">${car.ratings.fuelConsumption.score.toFixed(
+                        1
+                      )}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="overallComment">
+                  综合评价
+                </label>
+                <textarea id="overallComment" rows="6" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white" placeholder="请输入对该车型的综合评价...">${
+                  car.overallComment || ""
+                }</textarea>
+              </div>
+              
+              <div class="flex justify-between items-center">
+                <div>
+                  <button id="export-pdf-btn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                    导出PDF
+                  </button>
+                </div>
+                <div>
+                  <button id="add-to-compare-btn" class="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                    添加到对比
+                  </button>
+                </div>
+              </div>
+            </div>
+          `;
+            break;
+        }
+
+        html += `
+          </div>
+          
+          <!-- 导航按钮 - 添加nav-buttons类以确保在移动设备上可见 -->
+          <div class="flex justify-between mt-6 nav-buttons">
+            <button id="prev-step-btn" class="bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 px-4 py-2 rounded-lg flex items-center ${
+              step === 0 ? "invisible" : ""
+            }">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+              </svg>
+              上一步
+            </button>
+            <div class="flex space-x-2">
+              <button id="save-edit-btn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                </svg>
+                保存编辑
+              </button>
+              <button id="next-step-btn" class="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg flex items-center">
+                ${step === steps.length - 1 ? "保存" : "下一步"}
+                ${
+                  step === steps.length - 1
+                    ? `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                  </svg>`
+                    : `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                  </svg>`
+                }
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+
+        $("#view-container").html(html);
+
+        // 上一步按钮点击事件
+        $("#prev-step-btn").on("click", function () {
+          if (step > 0) {
+            saveCurrentStepData();
+            AppState.currentStep--;
+            navigateTo("record", { isNew });
+          }
+        });
+
+        // 保存编辑按钮点击事件
+        $("#save-edit-btn").on("click", function () {
+          if (saveCurrentStepData()) {
+            // 保存车辆数据
+            const carIndex = AppState.cars.findIndex((c) => c.id === car.id);
+            if (carIndex !== -1) {
+              AppState.cars[carIndex] = { ...car };
+            } else {
+              AppState.cars.push({ ...car });
+            }
+            saveData();
+            showToast("当前编辑已保存");
+          }
+        });
+
+        // 下一步按钮点击事件
+        $("#next-step-btn").on("click", function () {
+          if (saveCurrentStepData()) {
+            if (step < steps.length - 1) {
+              AppState.currentStep++;
+              navigateTo("record", { isNew });
+            } else {
+              // 保存车辆数据
+              const carIndex = AppState.cars.findIndex((c) => c.id === car.id);
+              if (carIndex !== -1) {
+                AppState.cars[carIndex] = { ...car };
+              } else {
+                AppState.cars.push({ ...car });
+              }
+              saveData();
+              navigateTo("home");
+              showToast("车辆评测数据已保存");
+            }
+          }
+        });
+
+        // 文件上传处理
+        $("#file-upload").on("change", function (e) {
+          const files = e.target.files;
+          if (files.length > 0) {
+            handleImageUpload(files);
+          }
+        });
+
+        // 拖放文件处理
+        const dropZone = document.querySelector(".border-dashed");
+        if (dropZone) {
+          dropZone.addEventListener("dragover", function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            this.classList.add("border-primary-500");
+          });
+
+          dropZone.addEventListener("dragleave", function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            this.classList.remove("border-primary-500");
+          });
+
+          dropZone.addEventListener("drop", function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            this.classList.remove("border-primary-500");
+
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+              handleImageUpload(files);
+            }
+          });
+        }
+
+        // 删除图片按钮点击事件
+        $("#image-preview").on("click", ".remove-image", function () {
+          const index = $(this).data("index");
+          car.images.splice(index, 1);
+          renderImagePreview();
+        });
+
+        // 添加优点按钮点击事件
+        $(".add-pro-btn").on("click", function () {
+          const category = $(this).data("category");
+          const proText = $(`#${category}-pro-input`).val().trim();
+
+          if (proText) {
+            car.ratings[category].pros.push(proText);
+            $(`#${category}-pro-input`).val("");
+            renderProsCons(category);
+          }
+        });
+
+        // 添加缺点按钮点击事件
+        $(".add-con-btn").on("click", function () {
+          const category = $(this).data("category");
+          const conText = $(`#${category}-con-input`).val().trim();
+
+          if (conText) {
+            car.ratings[category].cons.push(conText);
+            $(`#${category}-con-input`).val("");
+            renderProsCons(category);
+          }
+        });
+
+        // 删除优点按钮点击事件
+        $(".pros-list").on("click", ".remove-item", function () {
+          const category = $(this).closest(".pros-list").data("category");
+          const index = $(this).data("index");
+          car.ratings[category].pros.splice(index, 1);
+          renderProsCons(category);
+        });
+
+        // 删除缺点按钮点击事件
+        $(".cons-list").on("click", ".remove-item", function () {
+          const category = $(this).closest(".cons-list").data("category");
+          const index = $(this).data("index");
+          car.ratings[category].cons.splice(index, 1);
+          renderProsCons(category);
+        });
+
+        // 评分滑块变化事件
+        $(".rating-slider").on("input", function () {
+          const category = $(this).data("category");
+          const value = parseFloat($(this).val());
+          $(`#${category}-score`).text(value.toFixed(1));
+        });
+
+        // 导出PDF按钮点击事件
+        $("#export-pdf-btn").on("click", function () {
+          exportToPDF(car);
+        });
+
+        // 添加到对比按钮点击事件
+        $("#add-to-compare-btn").on("click", function () {
+          // 检查是否已在对比列表中
+          const existingIndex = AppState.compareList.findIndex(
+            (c) => c.id === car.id
+          );
+          if (existingIndex !== -1) {
+            showToast("该车型已在对比列表中");
+            return;
+          }
+
+          // 添加到对比列表
+          AppState.compareList.push({ ...car });
+          showToast("已添加到对比列表");
+        });
+      }
+
+      // 渲染评分部分
+      function renderRatingSection(category, title, car) {
+        const categoryLabels = {
+          exterior: {
+            title: "外观评测",
+            desc: "评价车辆的外观设计、做工质感和颜色选择",
+            pros: "外观优点",
+            cons: "外观缺点",
+          },
+          interior: {
+            title: "内饰评测",
+            desc: "评价车辆的内饰材质、布局、人机工程学和科技感",
+            pros: "内饰优点",
+            cons: "内饰缺点",
+          },
+          space: {
+            title: "空间表现",
+            desc: "评价车辆的前/后排空间、后备箱和储物空间",
+            pros: "空间优点",
+            cons: "空间缺点",
+          },
+          power: {
+            title: "动力系统",
+            desc: "评价车辆的加速表现、平顺性和换挡逻辑",
+            pros: "动力优点",
+            cons: "动力缺点",
+          },
+          handling: {
+            title: "操控性能",
+            desc: "评价车辆的转向精准度、刹车表现和悬挂调校",
+            pros: "操控优点",
+            cons: "操控缺点",
+          },
+          nvh: {
+            title: "NVH表现",
+            desc: "评价车辆的怠速噪音、行驶噪音、路噪和风噪",
+            pros: "NVH优点",
+            cons: "NVH缺点",
+          },
+          intelligence: {
+            title: "智能系统",
+            desc: "评价车辆的车机系统、驾驶辅助和智能互联",
+            pros: "智能系统优点",
+            cons: "智能系统缺点",
+          },
+          fuelConsumption: {
+            title: "油耗表现",
+            desc: "记录车辆的实测油耗/电耗",
+            pros: "油耗优点",
+            cons: "油耗缺点",
+          },
+        };
+
+        const label = categoryLabels[category];
+
+        return `
+        <div class="space-y-6">
+          <div>
+            <h4 class="text-lg font-medium mb-2">评分</h4>
+            <div class="flex items-center space-x-4">
+              <input type="range" class="rating-slider flex-grow" min="1" max="10" step="0.1" value="${
+                car.ratings[category].score
+              }" data-category="${category}">
+              <div class="text-2xl font-bold text-primary-600 dark:text-primary-400 w-16 text-center" id="${category}-score">${car.ratings[
+          category
+        ].score.toFixed(1)}</div>
+            </div>
+          </div>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <h4 class="text-lg font-medium mb-2">${label.pros}</h4>
+              <div class="flex items-center space-x-2 mb-4">
+                <input type="text" id="${category}-pro-input" class="flex-grow px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white" placeholder="添加优点...">
+                <button class="add-pro-btn bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-md" data-category="${category}">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                </button>
+              </div>
+              <ul class="pros-list space-y-2" data-category="${category}">
+                ${car.ratings[category].pros
+                  .map(
+                    (pro, index) => `
+                  <li class="flex items-center justify-between bg-green-50 dark:bg-green-900 p-2 rounded">
+                    <span class="text-green-800 dark:text-green-200">${pro}</span>
+                    <button class="remove-item text-red-500 hover:text-red-700" data-index="${index}">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </li>
+                `
+                  )
+                  .join("")}
+              </ul>
+            </div>
+            
+            <div>
+              <h4 class="text-lg font-medium mb-2">${label.cons}</h4>
+              <div class="flex items-center space-x-2 mb-4">
+                <input type="text" id="${category}-con-input" class="flex-grow px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white" placeholder="添加缺点...">
+                <button class="add-con-btn bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-md" data-category="${category}">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                </button>
+              </div>
+              <ul class="cons-list space-y-2" data-category="${category}">
+                ${car.ratings[category].cons
+                  .map(
+                    (con, index) => `
+                  <li class="flex items-center justify-between bg-red-50 dark:bg-red-900 p-2 rounded">
+                    <span class="text-red-800 dark:text-red-200">${con}</span>
+                    <button class="remove-item text-red-500 hover:text-red-700" data-index="${index}">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </li>
+                `
+                  )
+                  .join("")}
+              </ul>
+            </div>
+          </div>
+          
+          <div>
+            <h4 class="text-lg font-medium mb-2">备注</h4>
+            <textarea id="${category}-notes" rows="4" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white" placeholder="添加备注...">${
+          car.ratings[category].notes || ""
+        }</textarea>
+          </div>
+        </div>
+      `;
+      }
+
+      // 渲染对比视图
+      function renderCompareView() {
+        let html = `
+        <div class="space-y-6">
+          <div class="flex justify-between items-center">
+            <h2 class="text-2xl font-bold">车型对比</h2>
+            <button id="clear-compare-btn" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg flex items-center">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+              清空对比
+            </button>
+          </div>
+      `;
+
+        if (AppState.compareList.length === 0) {
+          html += `
+          <div class="text-center py-12 bg-gray-100 dark:bg-gray-800 rounded-lg">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+            <p class="mt-4 text-gray-600 dark:text-gray-400">暂无对比车型</p>
+            <p class="mt-2 text-gray-500 dark:text-gray-500">请在首页或评测页面添加车型到对比列表</p>
+          </div>
+        `;
+        } else {
+          // 对比表格
+          html += `
+          <div class="overflow-x-auto">
+            <table class="min-w-full bg-white dark:bg-gray-800 rounded-lg shadow-md">
+              <thead>
+                <tr class="bg-gray-100 dark:bg-gray-700">
+                  <th class="py-3 px-4 text-left">对比项目</th>
+                  ${AppState.compareList
+                    .map(
+                      (car) => `
+                    <th class="py-3 px-4 text-left">
+                      <div class="flex items-center justify-between">
+                        <span>${car.brand} ${car.model}</span>
+                        <button class="remove-from-compare text-red-500 hover:text-red-700" data-id="${car.id}">
+                          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+                    </th>
+                  `
+                    )
+                    .join("")}
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="py-3 px-4 font-semibold bg-gray-50 dark:bg-gray-900">综合评分</td>
+                  ${AppState.compareList
+                    .map(
+                      (car) => `
+                    <td class="py-3 px-4">
+                      <span class="text-xl font-bold text-primary-600 dark:text-primary-400">${calculateTotalScore(
+                        car
+                      ).toFixed(1)}</span>
+                    </td>
+                  `
+                    )
+                    .join("")}
+                </tr>
+                <tr>
+                  <td class="py-3 px-4 font-semibold bg-gray-50 dark:bg-gray-900">价格</td>
+                  ${AppState.compareList
+                    .map(
+                      (car) => `
+                    <td class="py-3 px-4">
+                      ${
+                        car.price
+                          ? `¥${car.price.toLocaleString("zh-CN")}万`
+                          : "暂无"
+                      }
+                      ${
+                        car.discountPrice
+                          ? `<br><span class="text-red-500">优惠价: ¥${car.discountPrice.toLocaleString(
+                              "zh-CN"
+                            )}万</span>`
+                          : ""
+                      }
+                    </td>
+                  `
+                    )
+                    .join("")}
+                </tr>
+                <tr>
+                  <td class="py-3 px-4 font-semibold bg-gray-50 dark:bg-gray-900">外观评分</td>
+                  ${AppState.compareList
+                    .map(
+                      (car) => `
+                    <td class="py-3 px-4">${car.ratings.exterior.score.toFixed(
+                      1
+                    )}</td>
+                  `
+                    )
+                    .join("")}
+                </tr>
+                <tr>
+                  <td class="py-3 px-4 font-semibold bg-gray-50 dark:bg-gray-900">内饰评分</td>
+                  ${AppState.compareList
+                    .map(
+                      (car) => `
+                    <td class="py-3 px-4">${car.ratings.interior.score.toFixed(
+                      1
+                    )}</td>
+                  `
+                    )
+                    .join("")}
+                </tr>
+                <tr>
+                  <td class="py-3 px-4 font-semibold bg-gray-50 dark:bg-gray-900">空间评分</td>
+                  ${AppState.compareList
+                    .map(
+                      (car) => `
+                    <td class="py-3 px-4">${car.ratings.space.score.toFixed(
+                      1
+                    )}</td>
+                  `
+                    )
+                    .join("")}
+                </tr>
+                <tr>
+                  <td class="py-3 px-4 font-semibold bg-gray-50 dark:bg-gray-900">动力评分</td>
+                  ${AppState.compareList
+                    .map(
+                      (car) => `
+                    <td class="py-3 px-4">${car.ratings.power.score.toFixed(
+                      1
+                    )}</td>
+                  `
+                    )
+                    .join("")}
+                </tr>
+                <tr>
+                  <td class="py-3 px-4 font-semibold bg-gray-50 dark:bg-gray-900">操控评分</td>
+                  ${AppState.compareList
+                    .map(
+                      (car) => `
+                    <td class="py-3 px-4">${car.ratings.handling.score.toFixed(
+                      1
+                    )}</td>
+                  `
+                    )
+                    .join("")}
+                </tr>
+                <tr>
+                  <td class="py-3 px-4 font-semibold bg-gray-50 dark:bg-gray-900">NVH评分</td>
+                  ${AppState.compareList
+                    .map(
+                      (car) => `
+                    <td class="py-3 px-4">${car.ratings.nvh.score.toFixed(
+                      1
+                    )}</td>
+                  `
+                    )
+                    .join("")}
+                </tr>
+                <tr>
+                  <td class="py-3 px-4 font-semibold bg-gray-50 dark:bg-gray-900">智能系统评分</td>
+                  ${AppState.compareList
+                    .map(
+                      (car) => `
+                    <td class="py-3 px-4">${car.ratings.intelligence.score.toFixed(
+                      1
+                    )}</td>
+                  `
+                    )
+                    .join("")}
+                </tr>
+                <tr>
+                  <td class="py-3 px-4 font-semibold bg-gray-50 dark:bg-gray-900">油耗评分</td>
+                  ${AppState.compareList
+                    .map(
+                      (car) => `
+                    <td class="py-3 px-4">${car.ratings.fuelConsumption.score.toFixed(
+                      1
+                    )}</td>
+                  `
+                    )
+                    .join("")}
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          
+          <!-- 雷达图对比 -->
+          <div class="mt-8">
+            <h3 class="text-xl font-bold mb-4">评分对比图</h3>
+            <div id="radar-chart" class="h-96">
+              <!-- 图表加载中占位符 -->
+              <div class="w-full h-full flex items-center justify-center bg-gray-100 dark:bg-gray-800 rounded-lg">
+                <div class="text-center">
+                  <div class="loader border-4 border-gray-200 rounded-full w-12 h-12 mx-auto"></div>
+                  <p class="mt-4 text-gray-600 dark:text-gray-400">图表加载中...</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 优缺点对比 -->
+          <div class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <h3 class="text-xl font-bold mb-4">优点对比</h3>
+              <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
+                ${AppState.compareList
+                  .map(
+                    (car) => `
+                  <div class="mb-4">
+                    <h4 class="font-semibold text-primary-600 dark:text-primary-400">${
+                      car.brand
+                    } ${car.model}</h4>
+                    <ul class="list-disc list-inside mt-2 space-y-1">
+                      ${getAllPros(car)
+                        .map((pro) => `<li>${pro}</li>`)
+                        .join("")}
+                    </ul>
+                  </div>
+                `
+                  )
+                  .join("")}
+              </div>
+            </div>
+            <div>
+              <h3 class="text-xl font-bold mb-4">缺点对比</h3>
+              <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
+                ${AppState.compareList
+                  .map(
+                    (car) => `
+                  <div class="mb-4">
+                    <h4 class="font-semibold text-primary-600 dark:text-primary-400">${
+                      car.brand
+                    } ${car.model}</h4>
+                    <ul class="list-disc list-inside mt-2 space-y-1">
+                      ${getAllCons(car)
+                        .map((con) => `<li>${con}</li>`)
+                        .join("")}
+                    </ul>
+                  </div>
+                `
+                  )
+                  .join("")}
+              </div>
+            </div>
+          </div>
+        `;
+        }
+
+        html += `
+        </div>
+      `;
+
+        $("#view-container").html(html);
+
+        // 如果有对比车型，按需加载Highcharts
+        if (AppState.compareList.length > 0) {
+          if (window.Highcharts) {
+            // Highcharts已加载，直接绘制图表
+            drawRadarChart();
+          } else {
+            // 按需加载Highcharts
+            loadScript("https://cdn.jsdelivr.net/npm/highcharts@10.3.3/highcharts.min.js")
+              .then(() => {
+                drawRadarChart();
+              })
+              .catch(error => {
+                console.error("加载Highcharts失败:", error);
+                $("#radar-chart").html(`
+                  <div class="w-full h-full flex items-center justify-center bg-gray-100 dark:bg-gray-800 rounded-lg">
+                    <div class="text-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <p class="mt-4 text-gray-600 dark:text-gray-400">加载图表失败，请检查网络连接</p>
+                    </div>
+                  </div>
+                `);
+              });
+          }
+        }
+
+        // 清空对比按钮点击事件
+        $("#clear-compare-btn").on("click", function () {
+          if (confirm("确定要清空对比列表吗？")) {
+            AppState.compareList = [];
+            renderCompareView();
+            showToast("对比列表已清空");
+          }
+        });
+
+        // 从对比中移除按钮点击事件
+        $(".remove-from-compare").on("click", function () {
+          const id = $(this).data("id");
+          const index = AppState.compareList.findIndex((car) => car.id === id);
+          if (index !== -1) {
+            AppState.compareList.splice(index, 1);
+            renderCompareView();
+            showToast("已从对比列表中移除");
+          }
+        });
+      }
+
+      // 渲染设置视图
+      function renderSettingsView() {
+        let html = `
+        <div class="space-y-6">
+          <div class="flex justify-between items-center">
+            <h2 class="text-2xl font-bold">设置</h2>
+          </div>
+          
+          <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 space-y-6">
+            <div>
+              <h3 class="text-lg font-semibold mb-4">应用设置</h3>
+              
+              <div class="space-y-4">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <h4 class="font-medium">暗色模式</h4>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">切换应用的亮色/暗色主题</p>
+                  </div>
+                  <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="dark-mode-toggle" class="sr-only" ${
+                      AppState.settings.darkMode ? "checked" : ""
+                    }>
+                    <div class="w-11 h-6 bg-gray-200 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
+                  </label>
+                </div>
+                
+                <div class="flex items-center justify-between">
+                  <div>
+                    <h4 class="font-medium">自动保存</h4>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">自动保存评测数据，防止意外丢失</p>
+                  </div>
+                  <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="auto-save-toggle" class="sr-only" ${
+                      AppState.settings.autoSave ? "checked" : ""
+                    }>
+                    <div class="w-11 h-6 bg-gray-200 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
+                  </label>
+                </div>
+                
+                <div class="flex items-center justify-between">
+                  <div>
+                    <h4 class="font-medium">离线模式</h4>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">启用离线功能，无网络也能使用</p>
+                  </div>
+                  <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="offline-mode-toggle" class="sr-only" ${
+                      AppState.settings.offlineMode ? "checked" : ""
+                    }>
+                    <div class="w-11 h-6 bg-gray-200 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
+                  </label>
+                </div>
+              </div>
+            </div>
+            
+            <div>
+              <h3 class="text-lg font-semibold mb-4">数据管理</h3>
+              
+              <div class="space-y-4">
+                <div class="flex flex-col space-y-2">
+                  <button id="export-data-btn" class="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                    导出数据
+                  </button>
+                  
+                  <button id="import-data-btn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                    </svg>
+                    导入数据
+                  </button>
+                  <input type="file" id="import-file" accept=".json" class="hidden">
+                  
+                  <button id="clear-data-btn" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                    清除所有数据
+                  </button>
+                </div>
+              </div>
+            </div>
+            
+            <div>
+              <h3 class="text-lg font-semibold mb-4">关于</h3>
+              
+              <div class="space-y-2">
+                <p class="text-sm">车评家 v1.0.0</p>
+                <p class="text-sm text-gray-600 dark:text-gray-400">专业的紧凑级车试驾数据收集工具</p>
+                <p class="text-sm text-gray-600 dark:text-gray-400">© 2023 车评家团队</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+
+        $("#view-container").html(html);
+
+        // 暗色模式切换
+        $("#dark-mode-toggle").on("change", function () {
+          AppState.settings.darkMode = $(this).is(":checked");
+          initTheme();
+          saveData();
+        });
+
+        // 自动保存切换
+        $("#auto-save-toggle").on("change", function () {
+          AppState.settings.autoSave = $(this).is(":checked");
+          saveData();
+        });
+
+        // 离线模式切换
+        $("#offline-mode-toggle").on("change", function () {
+          AppState.settings.offlineMode = $(this).is(":checked");
+          saveData();
+        });
+
+        // 导出数据按钮点击事件
+        $("#export-data-btn").on("click", function () {
+          exportData();
+        });
+
+        // 导入数据按钮点击事件
+        $("#import-data-btn").on("click", function () {
+          $("#import-file").click();
+        });
+
+        // 导入文件变化事件
+        $("#import-file").on("change", function (e) {
+          const file = e.target.files[0];
+          if (file) {
+            importData(file);
+          }
+        });
+
+        // 清除所有数据按钮点击事件
+        $("#clear-data-btn").on("click", function () {
+          if (confirm("确定要清除所有数据吗？此操作不可恢复！")) {
+            AppState.cars = [];
+            AppState.compareList = [];
+            saveData();
+            showToast("所有数据已清除");
+            navigateTo("home");
+          }
+        });
+      }
+
+      // 保存当前步骤数据
+      function saveCurrentStepData() {
+        const car = AppState.currentCar;
+        const step = AppState.currentStep;
+
+        switch (step) {
+          case 0: // 基本信息
+            car.brand = $("#brand").val().trim();
+            car.model = $("#model").val().trim();
+            car.version = $("#version").val().trim();
+            car.price = $("#price").val()
+              ? parseFloat($("#price").val())
+              : null;
+            car.discountPrice = $("#discountPrice").val()
+              ? parseFloat($("#discountPrice").val())
+              : null;
+            car.testDate = $("#testDate").val();
+            car.testLocation = $("#testLocation").val().trim();
+            car.salesConsultant = $("#salesConsultant").val().trim();
+
+            // 验证必填字段
+            if (!car.brand || !car.model) {
+              showToast("请填写品牌和车型");
+              return false;
+            }
+            break;
+
+          case 1: // 外观评测
+          case 2: // 内饰评测
+          case 3: // 空间表现
+          case 4: // 动力系统
+          case 5: // 操控性能
+          case 6: // NVH表现
+          case 7: // 智能系统
+          case 8: // 油耗表现
+            const categories = [
+              "exterior",
+              "interior",
+              "space",
+              "power",
+              "handling",
+              "nvh",
+              "intelligence",
+              "fuelConsumption",
+            ];
+            const category = categories[step - 1];
+
+            car.ratings[category].score = parseFloat($(".rating-slider").val());
+            car.ratings[category].notes = $(`#${category}-notes`).val().trim();
+            break;
+
+          case 9: // 总结评价
+            car.overallComment = $("#overallComment").val().trim();
+            break;
+        }
+
+        // 如果启用了自动保存，保存数据
+        if (AppState.settings.autoSave) {
+          const carIndex = AppState.cars.findIndex((c) => c.id === car.id);
+          if (carIndex !== -1) {
+            AppState.cars[carIndex] = { ...car };
+          }
+          saveData();
+        }
+
+        return true;
+      }
+
+      // 处理图片上传
+      function handleImageUpload(files) {
+        const car = AppState.currentCar;
+
+        for (let i = 0; i < files.length; i++) {
+          const file = files[i];
+
+          // 检查文件类型
+          if (!file.type.match("image.*")) {
+            showToast("只能上传图片文件");
+            continue;
+          }
+
+          // 检查文件大小
+          if (file.size > 10 * 1024 * 1024) {
+            // 10MB
+            showToast("图片大小不能超过10MB");
+            continue;
+          }
+
+          const reader = new FileReader();
+          reader.onload = function (e) {
+            car.images = car.images || [];
+            car.images.push(e.target.result);
+            renderImagePreview();
+          };
+          reader.readAsDataURL(file);
+        }
+      }
+
+      // 渲染图片预览
+      function renderImagePreview() {
+        const car = AppState.currentCar;
+        let html = "";
+
+        if (car.images && car.images.length > 0) {
+          car.images.forEach((img, idx) => {
+            html += `
+            <div class="relative">
+              <img src="${img}" alt="车辆照片" class="h-24 w-full object-cover rounded-md">
+              <button type="button" class="remove-image absolute top-1 right-1 bg-red-500 text-white rounded-full p-1" data-index="${idx}">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          `;
+          });
+        }
+
+        $("#image-preview").html(html);
+      }
+
+      // 渲染优缺点列表
+      function renderProsCons(category) {
+        const car = AppState.currentCar;
+
+        // 渲染优点列表
+        let prosHtml = "";
+        car.ratings[category].pros.forEach((pro, index) => {
+          prosHtml += `
+          <li class="flex items-center justify-between bg-green-50 dark:bg-green-900 p-2 rounded">
+            <span class="text-green-800 dark:text-green-200">${pro}</span>
+            <button class="remove-item text-red-500 hover:text-red-700" data-index="${index}">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </li>
+        `;
+        });
+        $(`.pros-list[data-category="${category}"]`).html(prosHtml);
+
+        // 渲染缺点列表
+        let consHtml = "";
+        car.ratings[category].cons.forEach((con, index) => {
+          consHtml += `
+          <li class="flex items-center justify-between bg-red-50 dark:bg-red-900 p-2 rounded">
+            <span class="text-red-800 dark:text-red-200">${con}</span>
+            <button class="remove-item text-red-500 hover:text-red-700" data-index="${index}">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </li>
+        `;
+        });
+        $(`.cons-list[data-category="${category}"]`).html(consHtml);
+      }
+
+      // 计算总评分
+      function calculateTotalScore(car) {
+        const ratings = car.ratings;
+        const categories = [
+          "exterior",
+          "interior",
+          "space",
+          "power",
+          "handling",
+          "nvh",
+          "intelligence",
+          "fuelConsumption",
+        ];
+
+        let totalScore = 0;
+        let count = 0;
+
+        categories.forEach((category) => {
+          if (ratings[category] && ratings[category].score) {
+            totalScore += ratings[category].score;
+            count++;
+          }
+        });
+
+        return count > 0 ? totalScore / count : 0;
+      }
+
+      // 获取所有优点
+      function getAllPros(car) {
+        const ratings = car.ratings;
+        const categories = [
+          "exterior",
+          "interior",
+          "space",
+          "power",
+          "handling",
+          "nvh",
+          "intelligence",
+          "fuelConsumption",
+        ];
+
+        let allPros = [];
+
+        categories.forEach((category) => {
+          if (ratings[category] && ratings[category].pros) {
+            ratings[category].pros.forEach((pro) => {
+              allPros.push(pro);
+            });
+          }
+        });
+
+        return allPros;
+      }
+
+      // 获取所有缺点
+      function getAllCons(car) {
+        const ratings = car.ratings;
+        const categories = [
+          "exterior",
+          "interior",
+          "space",
+          "power",
+          "handling",
+          "nvh",
+          "intelligence",
+          "fuelConsumption",
+        ];
+
+        let allCons = [];
+
+        categories.forEach((category) => {
+          if (ratings[category] && ratings[category].cons) {
+            ratings[category].cons.forEach((con) => {
+              allCons.push(con);
+            });
+          }
+        });
+
+        return allCons;
+      }
+
+      // 绘制雷达图
+      function drawRadarChart() {
+        const categories = [
+          "外观",
+          "内饰",
+          "空间",
+          "动力",
+          "操控",
+          "NVH",
+          "智能",
+          "油耗",
+        ];
+
+        const series = AppState.compareList.map((car) => {
+          return {
+            name: `${car.brand} ${car.model}`,
+            data: [
+              car.ratings.exterior.score,
+              car.ratings.interior.score,
+              car.ratings.space.score,
+              car.ratings.power.score,
+              car.ratings.handling.score,
+              car.ratings.nvh.score,
+              car.ratings.intelligence.score,
+              car.ratings.fuelConsumption.score,
+            ],
+            pointPlacement: "on",
+          };
+        });
+
+        Highcharts.chart("radar-chart", {
+          chart: {
+            polar: true,
+            type: "line",
+            backgroundColor: document.documentElement.classList.contains("dark")
+              ? "#1f2937"
+              : "#ffffff",
+          },
+          title: {
+            text: "车型评分雷达图",
+            style: {
+              color: document.documentElement.classList.contains("dark")
+                ? "#ffffff"
+                : "#000000",
+            },
+          },
+          pane: {
+            size: "80%",
+          },
+          xAxis: {
+            categories: categories,
+            tickmarkPlacement: "on",
+            lineWidth: 0,
+            labels: {
+              style: {
+                color: document.documentElement.classList.contains("dark")
+                  ? "#d1d5db"
+                  : "#4b5563",
+              },
+            },
+          },
+          yAxis: {
+            gridLineInterpolation: "polygon",
+            lineWidth: 0,
+            min: 0,
+            max: 10,
+            labels: {
+              style: {
+                color: document.documentElement.classList.contains("dark")
+                  ? "#d1d5db"
+                  : "#4b5563",
+              },
+            },
+          },
+          tooltip: {
+            shared: true,
+            pointFormat:
+              '<span style="color:{series.color}">{series.name}: <b>{point.y:,.1f}</b><br/>',
+          },
+          legend: {
+            itemStyle: {
+              color: document.documentElement.classList.contains("dark")
+                ? "#d1d5db"
+                : "#4b5563",
+            },
+          },
+          series: series,
+          responsive: {
+            rules: [
+              {
+                condition: {
+                  maxWidth: 500,
+                },
+                chartOptions: {
+                  legend: {
+                    align: "center",
+                    verticalAlign: "bottom",
+                  },
+                  pane: {
+                    size: "70%",
+                  },
+                },
+              },
+            ],
+          },
+        });
+      }
+
+      // 导出数据为JSON
+      function exportData() {
+        const data = {
+          cars: AppState.cars,
+          settings: AppState.settings,
+        };
+
+        const dataStr = JSON.stringify(data, null, 2);
+        const dataUri =
+          "data:application/json;charset=utf-8," + encodeURIComponent(dataStr);
+
+        const exportFileName = `车评家数据_${
+          new Date().toISOString().split("T")[0]
+        }.json`;
+
+        const linkElement = document.createElement("a");
+        linkElement.setAttribute("href", dataUri);
+        linkElement.setAttribute("download", exportFileName);
+        linkElement.click();
+
+        showToast("数据导出成功");
+      }
+
+      // 导入数据
+      function importData(file) {
+        const reader = new FileReader();
+
+        reader.onload = function (e) {
+          try {
+            const data = JSON.parse(e.target.result);
+
+            if (data.cars && Array.isArray(data.cars)) {
+              if (confirm("导入将覆盖现有数据，是否继续？")) {
+                AppState.cars = data.cars;
+
+                if (data.settings) {
+                  AppState.settings = {
+                    ...AppState.settings,
+                    ...data.settings,
+                  };
+                }
+
+                saveData();
+                initTheme();
+                navigateTo("home");
+                showToast("数据导入成功");
+              }
+            } else {
+              showToast("无效的数据格式");
+            }
+          } catch (error) {
+            console.error("导入数据失败:", error);
+            showToast("导入数据失败，请检查文件格式");
+          }
+        };
+
+        reader.readAsText(file);
+      }
+
+      // 导出为PDF
+      function exportToPDF(car) {
+        showLoader();
+
+        setTimeout(() => {
+          try {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            // 标题
+            doc.setFontSize(20);
+            doc.text(`${car.brand} ${car.model} 试驾评测报告`, 105, 20, {
+              align: "center",
+            });
+
+            // 基本信息
+            doc.setFontSize(16);
+            doc.text("基本信息", 20, 40);
+
+            doc.setFontSize(12);
+            doc.text(`品牌: ${car.brand}`, 20, 50);
+            doc.text(`车型: ${car.model}`, 20, 60);
+            doc.text(`版本: ${car.version || "未指定"}`, 20, 70);
+            doc.text(
+              `指导价: ${
+                car.price ? `¥${car.price.toLocaleString("zh-CN")}万` : "暂无"
+              }`,
+              20,
+              80
+            );
+            doc.text(
+              `优惠价: ${
+                car.discountPrice
+                  ? `¥${car.discountPrice.toLocaleString("zh-CN")}万`
+                  : "暂无"
+              }`,
+              20,
+              90
+            );
+            doc.text(
+              `试驾日期: ${
+                car.testDate
+                  ? new Date(car.testDate).toLocaleDateString("zh-CN")
+                  : "未记录"
+              }`,
+              20,
+              100
+            );
+            doc.text(`试驾地点: ${car.testLocation || "未记录"}`, 20, 110);
+
+            // 评分
+            doc.setFontSize(16);
+            doc.text("评分详情", 20, 130);
+
+            doc.setFontSize(12);
+            doc.text(
+              `综合评分: ${calculateTotalScore(car).toFixed(1)}/10`,
+              20,
+              140
+            );
+            doc.text(
+              `外观评分: ${car.ratings.exterior.score.toFixed(1)}/10`,
+              20,
+              150
+            );
+            doc.text(
+              `内饰评分: ${car.ratings.interior.score.toFixed(1)}/10`,
+              20,
+              160
+            );
+            doc.text(
+              `空间评分: ${car.ratings.space.score.toFixed(1)}/10`,
+              20,
+              170
+            );
+            doc.text(
+              `动力评分: ${car.ratings.power.score.toFixed(1)}/10`,
+              20,
+              180
+            );
+            doc.text(
+              `操控评分: ${car.ratings.handling.score.toFixed(1)}/10`,
+              20,
+              190
+            );
+            doc.text(
+              `NVH评分: ${car.ratings.nvh.score.toFixed(1)}/10`,
+              20,
+              200
+            );
+            doc.text(
+              `智能评分: ${car.ratings.intelligence.score.toFixed(1)}/10`,
+              20,
+              210
+            );
+            doc.text(
+              `油耗评分: ${car.ratings.fuelConsumption.score.toFixed(1)}/10`,
+              20,
+              220
+            );
+
+            // 添加新页面
+            doc.addPage();
+
+            // 优缺点
+            doc.setFontSize(16);
+            doc.text("优缺点分析", 20, 20);
+
+            // 优点
+            doc.setFontSize(14);
+            doc.text("优点:", 20, 30);
+
+            const allPros = getAllPros(car);
+            let yPos = 40;
+
+            allPros.forEach((pro) => {
+              doc.setFontSize(12);
+              doc.text(`• ${pro}`, 30, yPos);
+              yPos += 10;
+
+              if (yPos > 280) {
+                doc.addPage();
+                yPos = 20;
+              }
+            });
+
+            // 缺点
+            yPos += 10;
+            doc.setFontSize(14);
+            doc.text("缺点:", 20, yPos);
+            yPos += 10;
+
+            const allCons = getAllCons(car);
+
+            allCons.forEach((con) => {
+              doc.setFontSize(12);
+              doc.text(`• ${con}`, 30, yPos);
+              yPos += 10;
+
+              if (yPos > 280) {
+                doc.addPage();
+                yPos = 20;
+              }
+            });
+
+            // 综合评价
+            if (car.overallComment) {
+              yPos += 10;
+              doc.setFontSize(16);
+              doc.text("综合评价", 20, yPos);
+              yPos += 10;
+
+              const textLines = doc.splitTextToSize(car.overallComment, 170);
+              doc.setFontSize(12);
+              doc.text(textLines, 20, yPos);
+            }
+
+            // 保存PDF
+            doc.save(`${car.brand}_${car.model}_试驾评测报告.pdf`);
+
+            hideLoader();
+            showToast("PDF导出成功");
+          } catch (error) {
+            console.error("导出PDF失败:", error);
+            hideLoader();
+            showToast("导出PDF失败，请稍后重试");
+          }
+        }, 500);
+      }
+    </script>
+
+    <!-- Service Worker 注册 -->
+    <script>
+      // 改进的Service Worker注册逻辑
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", function () {
+          navigator.serviceWorker
+            .register("service-worker.js")
+            .then(function (registration) {
+              console.log("Service Worker 注册成功:", registration.scope);
+              
+              // 检查更新
+              registration.addEventListener('updatefound', () => {
+                const newWorker = registration.installing;
+                newWorker.addEventListener('statechange', () => {
+                  if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                    // 显示更新提示
+                    showToast('应用已更新，请刷新页面获取最新版本');
+                  }
+                });
+              });
+            })
+            .catch(function (error) {
+              console.log("Service Worker 注册失败:", error);
+            });
+            
+          // 在联网时检查更新
+          window.addEventListener('online', () => {
+            if (navigator.serviceWorker.controller) {
+              navigator.serviceWorker.controller.postMessage({
+                type: 'CHECK_UPDATE'
+              });
+            }
+          });
+        });
+      }
+    </script>
+  </body>
+</html>
