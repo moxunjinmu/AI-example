@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="车评家 - 专业的紧凑级车试驾数据收集工具"
+    />
+    <meta name="theme-color" content="#ffffff" id="theme-color" />
+    <title>车评家 - 专业的紧凑级车试驾数据收集工具</title>
+
+    <!-- 预连接关键域名 -->
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    <link rel="preconnect" href="https://cdn.tailwindcss.com" crossorigin>
+    <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
+
+    <!-- PWA 相关配置 -->
+    <link rel="manifest" href="manifest.json" />
+    <link rel="apple-touch-icon" href="icons/placeholder.svg" />
+
+    <!-- 关键CSS内联（首屏渲染必需） -->
+    <style>
+      /* 基础样式 - 首屏必需 */
+      body {
+        margin: 0;
+        background-color: #f9fafb;
+        color: #111827;
+        transition: background-color 0.2s, color 0.2s;
+      }
+      .dark body {
+        background-color: #111827;
+        color: #f9fafb;
+      }
+      #app {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+      header {
+        background-color: white;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        position: sticky;
+        top: 0;
+        z-index: 40;
+      }
+      .dark header {
+        background-color: #1f2937;
+      }
+      .container {
+        width: 100%;
+        margin: 0 auto;
+        padding: 0 1rem;
+      }
+      .flex {display: flex;}
+      .items-center {align-items: center;}
+      .justify-between {justify-content: space-between;}
+      .text-xl {font-size: 1.25rem;}
+      .font-bold {font-weight: 700;}
+      .space-x-3 > * + * {margin-left: 0.75rem;}
+      
+      /* 骨架屏样式 */
+      .skeleton-loader {padding: 1rem;}
+      .animate-pulse {
+        animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+      }
+      @keyframes pulse {
+        0%, 100% {opacity: 1;}
+        50% {opacity: .5;}
+      }
+      
+      /* 加载指示器和提示样式 - 首屏必需 */
+      .loader {
+        border-top-color: #0ea5e9;
+        -webkit-animation: spinner 1.5s linear infinite;
+        animation: spinner 1.5s linear infinite;
+      }
+      @keyframes spinner {
+        0% {transform: rotate(0deg);}
+        100% {transform: rotate(360deg);}
+      }
+    </style>
+
+    <!-- 非关键CSS通过外部文件加载 -->
+    <link rel="stylesheet" href="css/styles.css">
+
+    <!-- 引入 TailwindCSS (优化配置) -->
+    <script src="https://cdn.tailwindcss.com?minify=true"></script>
+    <script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              primary: {
+                50: "#f0f9ff",
+                100: "#e0f2fe",
+                200: "#bae6fd",
+                300: "#7dd3fc",
+                400: "#38bdf8",
+                500: "#0ea5e9",
+                600: "#0284c7",
+                700: "#0369a1",
+                800: "#075985",
+                900: "#0c4a6e",
+                950: "#082f49",
+              },
+            },
+          },
+        },
+      };
+    </script>
+
+    <!-- 引入 jQuery (核心依赖) -->
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.4/dist/jquery.min.js"></script>
+
+    <!-- 非核心库通过动态加载 - 不再直接引入 -->
+    <!-- <script src="https://cdn.jsdelivr.net/npm/highcharts@10.3.3/highcharts.min.js"></script> -->
+    <!-- <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script> -->
+    <!-- <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script> -->
+
+    <style>
+      /* 自定义样式 */
+      .thumb-zone {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        z-index: 50;
+      }
+
+      /* 滑块样式 */
+      input[type="range"] {
+        -webkit-appearance: none;
+        width: 100%;
+        height: 8px;
+        border-radius: 5px;
+        background: #d3d3d3;
+        outline: none;
+      }
+
+      input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 25px;
+        height: 25px;
+        border-radius: 50%;
+        background: #0ea5e9;
+        cursor: pointer;
+      }
+
+      input[type="range"]::-moz-range-thumb {
+        width: 25px;
+        height: 25px;
+        border-radius: 50%;
+        background: #0ea5e9;
+        cursor: pointer;
+      }
+
+      /* 星级评分样式 */
+      .star-rating {
+        font-size: 0;
+      }
+
+      .star-rating span {
+        display: inline-block;
+        font-size: 1.5rem;
+        padding: 0 0.1rem;
+        cursor: pointer;
+      }
+
+      /* 暗色模式适配 */
+      .dark .star-rating .star-filled {
+        color: #fbbf24;
+      }
+
+      .star-rating .star-filled {
+        color: #f59e0b;
+      }
+
+      .star-rating .star-empty {
+        color: #d1d5db;
+      }
+
+      /* 修复移动端底部按钮可见性问题 */
+      .nav-buttons {
+        margin-bottom: 80px; /* 确保在移动设备上按钮不被底部导航栏遮挡 */
+      }
+
+      /* 修复移动端表单元素样式 */
+      @media (max-width: 640px) {
+        input,
+        select,
+        textarea {
+          font-size: 16px !important; /* 防止iOS自动缩放 */
+        }
+
+        /* 确保移动端按钮足够大，易于点击 */
+        button {
+          min-height: 44px;
+        }
+
+        /* 调整移动端的内容间距 */
+        .step-content {
+          padding: 1rem !important;
+        }
+
+        /* 确保滑块在移动端可以正常操作 */
+        input[type="range"]::-webkit-slider-thumb {
+          width: 28px;
+          height: 28px;
+        }
+
+        input[type="range"]::-moz-range-thumb {
+          width: 28px;
+          height: 28px;
+        }
+      }
+
+      /* 修复iOS Safari底部安全区域问题 */
+      @supports (padding-bottom: env(safe-area-inset-bottom)) {
+        .thumb-zone {
+          padding-bottom: env(safe-area-inset-bottom);
+        }
+
+        .content-area {
+          padding-bottom: calc(120px + env(safe-area-inset-bottom));
+        }
+      }
+    </style>
+  </head>
+  <body
+    class="bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-gray-100 transition-colors duration-200"
+  >
+    <!-- 应用容器 -->
+    <div id="app" class="min-h-screen flex flex-col">
+      <!-- 顶部导航栏 -->
+      <header class="bg-white dark:bg-gray-800 shadow-md sticky top-0 z-40">
+        <div
+          class="container mx-auto px-4 py-3 flex justify-between items-center"
+        >
+          <h1 class="text-xl font-bold text-primary-600 dark:text-primary-400">
+            车评家
+          </h1>
+          <div class="flex items-center space-x-3">
+            <button
+              id="theme-toggle"
+              class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"
+            >
+              <!-- 亮色模式图标 -->
+              <svg
+                id="light-icon"
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-6 w-6 text-yellow-500 hidden"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"
+                />
+              </svg>
+              <!-- 暗色模式图标 -->
+              <svg
+                id="dark-icon"
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-6 w-6 text-gray-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"
+                />
+              </svg>
+            </button>
+            <button id="network-status" class="p-2 rounded-full">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-6 w-6 text-green-500"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M5 12h14M12 5l7 7-7 7"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <!-- 主内容区域 -->
+      <main class="flex-grow container mx-auto px-4 py-6 content-area">
+        <!-- 视图容器 -->
+        <div id="view-container">
+          <!-- 首页视图 -->
+          <div id="home-view" class="view hidden">
+            <h2 class="text-2xl font-bold mb-4">我的车辆</h2>
+            
+            <!-- 搜索栏 -->
+            <div class="mb-6">
+              <div class="relative">
+                <input type="text" id="car-search" placeholder="搜索车型..." 
+                  class="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 dark:bg-gray-800 dark:border-gray-700">
+                <div class="absolute left-3 top-2.5 text-gray-400">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+            
+            <!-- 无搜索结果提示 -->
+            <div id="no-results" class="text-center py-8 hidden">
+              <svg class="w-12 h-12 mx-auto text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+              <h3 class="mt-4 text-lg font-medium">未找到匹配的车型</h3>
+              <p class="mt-1 text-gray-500 dark:text-gray-400">请尝试其他搜索词</p>
+            </div>
+            
+            <!-- 车辆列表 -->
+            <div id="car-list" class="grid grid-cols-1 gap-4"></div>
+            
+            <!-- 添加按钮 -->
+            <button id="add-car-button" class="fixed bottom-24 right-6 bg-blue-500 text-white rounded-full p-4 shadow-lg hover:bg-blue-600 transition z-30">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+              </svg>
+            </button>
+          </div>
+          
+          <!-- 添加车型视图 -->
+          <div id="add-view" class="view hidden">
+            <div class="flex items-center mb-6">
+              <button id="back-to-home" class="mr-2 p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+              <h2 id="add-car-title" class="text-2xl font-bold">添加新车型</h2>
+            </div>
+            
+            <form id="add-car-form" class="space-y-6">
+              <input type="hidden" id="edit-mode" value="add">
+              <input type="hidden" id="edit-index" value="">
+              
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="form-group">
+                  <label for="car-brand" class="block text-sm font-medium">品牌</label>
+                  <input type="text" id="car-brand" class="form-control" placeholder="例如：丰田" required>
+                </div>
+                
+                <div class="form-group">
+                  <label for="car-model" class="block text-sm font-medium">型号</label>
+                  <input type="text" id="car-model" class="form-control" placeholder="例如：卡罗拉" required>
+                </div>
+                
+                <div class="form-group">
+                  <label for="car-year" class="block text-sm font-medium">年款</label>
+                  <input type="number" id="car-year" class="form-control" placeholder="例如：2023" min="1900" max="2100" required>
+                </div>
+                
+                <div class="form-group">
+                  <label for="car-price" class="block text-sm font-medium">价格 (万元)</label>
+                  <input type="number" id="car-price" class="form-control" placeholder="例如：15.98" step="0.01" min="0" required>
+                </div>
+              </div>
+              
+              <div class="space-y-4">
+                <h3 class="text-lg font-medium">评分</h3>
+                
+                <div class="form-group">
+                  <label for="rating-driving" class="block text-sm font-medium">驾驶体验</label>
+                  <div class="flex items-center space-x-4">
+                    <input type="range" id="rating-driving" class="rating-input flex-grow" min="0" max="5" step="1" value="0" data-category="driving">
+                    <div class="rating-display flex items-center space-x-2">
+                      <div class="star-rating"></div>
+                      <span class="rating-value font-medium">0</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="form-group">
+                  <label for="rating-comfort" class="block text-sm font-medium">舒适性</label>
+                  <div class="flex items-center space-x-4">
+                    <input type="range" id="rating-comfort" class="rating-input flex-grow" min="0" max="5" step="1" value="0" data-category="comfort">
+                    <div class="rating-display flex items-center space-x-2">
+                      <div class="star-rating"></div>
+                      <span class="rating-value font-medium">0</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="form-group">
+                  <label for="rating-interior" class="block text-sm font-medium">内饰品质</label>
+                  <div class="flex items-center space-x-4">
+                    <input type="range" id="rating-interior" class="rating-input flex-grow" min="0" max="5" step="1" value="0" data-category="interior">
+                    <div class="rating-display flex items-center space-x-2">
+                      <div class="star-rating"></div>
+                      <span class="rating-value font-medium">0</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="form-group">
+                  <label for="rating-features" class="block text-sm font-medium">配置水平</label>
+                  <div class="flex items-center space-x-4">
+                    <input type="range" id="rating-features" class="rating-input flex-grow" min="0" max="5" step="1" value="0" data-category="features">
+                    <div class="rating-display flex items-center space-x-2">
+                      <div class="star-rating"></div>
+                      <span class="rating-value font-medium">0</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="form-group">
+                  <label for="rating-value" class="block text-sm font-medium">性价比</label>
+                  <div class="flex items-center space-x-4">
+                    <input type="range" id="rating-value" class="rating-input flex-grow" min="0" max="5" step="1" value="0" data-category="value">
+                    <div class="rating-display flex items-center space-x-2">
+                      <div class="star-rating"></div>
+                      <span class="rating-value font-medium">0</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="form-group">
+                <label for="car-notes" class="block text-sm font-medium">试驾备注</label>
+                <textarea id="car-notes" rows="4" class="form-control" placeholder="输入您的试驾感受..."></textarea>
+              </div>
+              
+              <div class="nav-buttons flex justify-between pt-6">
+                <button type="button" id="cancel-add-car" class="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 dark:border-gray-600 dark:hover:bg-gray-700">
+                  取消
+                </button>
+                <button type="submit" class="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
+                  保存
+                </button>
+              </div>
+            </form>
+          </div>
+          
+          <!-- 对比视图 -->
+          <div id="compare-view" class="view hidden">
+            <h2 class="text-2xl font-bold mb-6">车型对比</h2>
+            <div id="compare-content"></div>
+          </div>
+          
+          <!-- 设置视图 -->
+          <div id="settings-view" class="view hidden">
+            <h2 class="text-2xl font-bold mb-6">设置</h2>
+            
+            <div class="space-y-6">
+              <div class="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
+                <h3 class="font-medium text-lg mb-4">应用设置</h3>
+                
+                <div class="space-y-4">
+                  <div class="flex items-center justify-between">
+                    <div>
+                      <p class="font-medium">深色模式</p>
+                      <p class="text-sm text-gray-500 dark:text-gray-400">启用/禁用深色主题</p>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                      <input type="checkbox" id="setting-dark-mode" class="sr-only setting-toggle" data-setting="darkMode">
+                      <div class="w-11 h-6 bg-gray-200 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-500"></div>
+                    </label>
+                  </div>
+                  
+                  <div class="flex items-center justify-between">
+                    <div>
+                      <p class="font-medium">自动保存</p>
+                      <p class="text-sm text-gray-500 dark:text-gray-400">自动保存数据变更</p>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                      <input type="checkbox" id="setting-auto-save" class="sr-only setting-toggle" data-setting="autoSave">
+                      <div class="w-11 h-6 bg-gray-200 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-500"></div>
+                    </label>
+                  </div>
+                  
+                  <div class="flex items-center justify-between">
+                    <div>
+                      <p class="font-medium">离线模式</p>
+                      <p class="text-sm text-gray-500 dark:text-gray-400">启用离线功能</p>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                      <input type="checkbox" id="setting-offline-mode" class="sr-only setting-toggle" data-setting="offlineMode">
+                      <div class="w-11 h-6 bg-gray-200 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-500"></div>
+                    </label>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
+                <h3 class="font-medium text-lg mb-4">数据管理</h3>
+                
+                <div class="space-y-4">
+                  <button id="export-data" class="w-full py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
+                    导出数据
+                  </button>
+                  
+                  <button id="import-data" class="w-full py-2 bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600">
+                    导入数据
+                  </button>
+                  <input type="file" id="import-file" accept=".json" class="hidden">
+                </div>
+              </div>
+              
+              <div class="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
+                <h3 class="font-medium text-lg mb-4">关于</h3>
+                <p class="text-sm text-gray-600 dark:text-gray-400">
+                  车评家 v1.0<br>
+                  一款专业的车辆试驾评测工具<br>
+                  © 2023 车评家团队
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- 骨架屏 - 初始可见 -->
+          <div id="skeleton-screen" class="skeleton-loader">
+            <div class="animate-pulse bg-gray-200 dark:bg-gray-700 h-8 w-3/4 mb-4 rounded"></div>
+            <div class="animate-pulse bg-gray-200 dark:bg-gray-700 h-10 w-40 mb-6 rounded-lg"></div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div class="animate-pulse bg-gray-200 dark:bg-gray-700 h-64 rounded-lg"></div>
+              <div class="animate-pulse bg-gray-200 dark:bg-gray-700 h-64 rounded-lg"></div>
+              <div class="animate-pulse bg-gray-200 dark:bg-gray-700 h-64 rounded-lg"></div>
+            </div>
+          </div>
+        </div>
+      </main>
+      
+      <!-- 对比底栏 -->
+      <div id="compare-bar" class="fixed bottom-16 left-0 right-0 bg-blue-500 text-white py-2 px-4 hidden z-40">
+        <div class="container mx-auto flex justify-between items-center">
+          <div>
+            已选择 <span id="compare-count" class="font-bold">0</span> 个车型
+          </div>
+          <button id="go-to-compare" class="px-4 py-1 bg-white text-blue-500 rounded-lg font-medium">
+            对比
+          </button>
+        </div>
+      </div>
+      
+      <!-- 车辆详情模态框 -->
+      <div id="car-detail-modal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 hidden">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto">
+          <div class="p-6">
+            <div class="flex justify-between items-start mb-4">
+              <div>
+                <h3 id="detail-title" class="text-xl font-bold"></h3>
+                <p id="detail-subtitle" class="text-gray-600 dark:text-gray-400"></p>
+              </div>
+              <button id="close-detail-modal" class="p-1 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            <div class="space-y-4">
+              <div>
+                <h4 class="font-medium mb-2">驾驶体验</h4>
+                <div id="detail-driving" class="star-rating"></div>
+              </div>
+              
+              <div>
+                <h4 class="font-medium mb-2">舒适性</h4>
+                <div id="detail-comfort" class="star-rating"></div>
+              </div>
+              
+              <div>
+                <h4 class="font-medium mb-2">内饰品质</h4>
+                <div id="detail-interior" class="star-rating"></div>
+              </div>
+              
+              <div>
+                <h4 class="font-medium mb-2">配置水平</h4>
+                <div id="detail-features" class="star-rating"></div>
+              </div>
+              
+              <div>
+                <h4 class="font-medium mb-2">性价比</h4>
+                <div id="detail-value" class="star-rating"></div>
+              </div>
+              
+              <div>
+                <h4 class="font-medium mb-2">试驾备注</h4>
+                <p id="detail-notes" class="text-gray-700 dark:text-gray-300 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg"></p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 底部导航栏 - 移动端优化 -->
+      <nav
+        class="thumb-zone bg-white dark:bg-gray-800 shadow-lg border-t border-gray-200 dark:border-gray-700"
+      >
+        <div class="container mx-auto px-4">
+          <div class="flex justify-around py-3">
+            <button
+              class="nav-btn flex flex-col items-center p-2 rounded-lg"
+              data-view="home"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+                />
+              </svg>
+              <span class="text-xs mt-1">首页</span>
+            </button>
+            <button
+              class="nav-btn flex flex-col items-center p-2 rounded-lg"
+              data-view="compare"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                />
+              </svg>
+              <span class="text-xs mt-1">对比</span>
+            </button>
+            <button
+              class="nav-btn flex flex-col items-center p-2 rounded-lg"
+              data-view="settings"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+                />
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                />
+              </svg>
+              <span class="text-xs mt-1">设置</span>
+            </button>
+          </div>
+        </div>
+      </nav>
+
+      <!-- 加载指示器 -->
+      <div
+        id="loader"
+        class="fixed inset-0 flex items-center justify-center bg-white bg-opacity-75 dark:bg-gray-900 dark:bg-opacity-75 z-50 hidden"
+      >
+        <div
+          class="loader border-4 border-gray-200 rounded-full w-12 h-12"
+        ></div>
+      </div>
+
+      <!-- 提示消息 -->
+      <div
+        id="toast"
+        class="fixed bottom-20 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-4 py-2 rounded-lg shadow-lg z-50 hidden"
+      >
+        消息提示
+      </div>
+    </div>
+
+    <!-- 应用JS模块化加载 -->
+    <script src="js/app.js"></script>
+    <script src="js/service-worker-registration.js"></script>
+    <script src="js/views.js"></script>
+    <script src="js/forms.js"></script>
+  </body>
+</html>

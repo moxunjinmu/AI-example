@@ -1,34 +1,37 @@
 // 缓存名称和版本
-const STATIC_CACHE_NAME = 'car-evaluator-static-v1.1';
-const DYNAMIC_CACHE_NAME = 'car-evaluator-dynamic-v1.1';
-const RUNTIME_CACHE_NAME = 'car-evaluator-runtime-v1.1';
+const STATIC_CACHE_NAME = 'car-evaluator-static-v1.3';
+const DYNAMIC_CACHE_NAME = 'car-evaluator-dynamic-v1.3';
+const RUNTIME_CACHE_NAME = 'car-evaluator-runtime-v1.3';
 
 // 核心静态资源（离线必需）
 const CORE_ASSETS = [
-  '/',
-  '/index.html',
-  '/manifest.json',
-  '/js/libs/tailwind.min.js',
-  '/js/libs/jquery.min.js'
-  // 移除不存在的资源
-  // '/icons/icon-192x192.png',
-  // '/icons/icon-512x512.png'
+  './',
+  './index.html',
+  './manifest.json',
+  './css/styles.css',
+  './js/app.js',
+  './js/service-worker-registration.js',
+  './js/views.js',
+  './js/forms.js',
+  './icons/placeholder.svg'
 ];
 
 // 预缓存的CDN资源（核心依赖）
 const CDN_ASSETS = [
-  // jQuery已本地化，无需从CDN获取
-  // 'https://cdn.jsdelivr.net/npm/jquery@3.6.4/dist/jquery.min.js'
+  'https://cdn.jsdelivr.net/npm/jquery@3.6.4/dist/jquery.min.js'
+];
+
+// 本地备份资源
+const LOCAL_BACKUP_ASSETS = [
+  './js/libs/jquery.min.js'
 ];
 
 // 按需缓存（非核心依赖）
 const ON_DEMAND_ASSETS = [
-  // 'https://cdn.tailwindcss.com',  // 已替换为本地文件
-  '/js/libs/highcharts.min.js',        // 已本地化的Highcharts
-  '/js/libs/highcharts-more.min.js',   // 已本地化的Highcharts
-  '/js/libs/accessibility.js',         // 已本地化的Highcharts
-  '/js/libs/jspdf.umd.min.js',        // 已本地化的jsPDF
-  '/js/libs/html2canvas.min.js'       // 已本地化的html2canvas
+  'https://cdn.tailwindcss.com',
+  'https://cdn.jsdelivr.net/npm/highcharts@10.3.3/highcharts.min.js',
+  'https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js',
+  'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js'
 ];
 
 // 安装Service Worker - 预缓存核心资源
@@ -41,17 +44,15 @@ self.addEventListener('install', event => {
         console.log('[Service Worker] 预缓存核心静态资源');
         return cache.addAll(CORE_ASSETS);
       })
-      .then(() => {
-        // 如果CDN_ASSETS为空，则跳过CDN资源缓存
-        if (CDN_ASSETS.length === 0) {
-          return Promise.resolve();
-        }
-        
-        return caches.open(DYNAMIC_CACHE_NAME)
-          .then(cache => {
-            console.log('[Service Worker] 预缓存CDN资源');
-            return cache.addAll(CDN_ASSETS);
-          });
+      .then(() => caches.open(DYNAMIC_CACHE_NAME))
+      .then(cache => {
+        console.log('[Service Worker] 预缓存CDN资源');
+        return cache.addAll(CDN_ASSETS);
+      })
+      .then(() => caches.open(RUNTIME_CACHE_NAME))
+      .then(cache => {
+        console.log('[Service Worker] 预缓存本地备份资源');
+        return cache.addAll(LOCAL_BACKUP_ASSETS);
       })
       .then(() => self.skipWaiting())
   );

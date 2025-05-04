@@ -1,0 +1,267 @@
+/* 基础样式 - 首屏必需 */
+body {
+  margin: 0;
+  background-color: #f9fafb;
+  color: #111827;
+  transition: background-color 0.2s, color 0.2s;
+}
+.dark body {
+  background-color: #111827;
+  color: #f9fafb;
+}
+#app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+header {
+  background-color: white;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  position: sticky;
+  top: 0;
+  z-index: 40;
+}
+.dark header {
+  background-color: #1f2937;
+}
+.container {
+  width: 100%;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+.flex {display: flex;}
+.items-center {align-items: center;}
+.justify-between {justify-content: space-between;}
+.text-xl {font-size: 1.25rem;}
+.font-bold {font-weight: 700;}
+.space-x-3 > * + * {margin-left: 0.75rem;}
+
+/* 骨架屏样式 */
+.skeleton-loader {padding: 1rem;}
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+@keyframes pulse {
+  0%, 100% {opacity: 1;}
+  50% {opacity: .5;}
+}
+
+/* 加载指示器和提示样式 - 首屏必需 */
+.loader {
+  border-top-color: #0ea5e9;
+  -webkit-animation: spinner 1.5s linear infinite;
+  animation: spinner 1.5s linear infinite;
+}
+@keyframes spinner {
+  0% {transform: rotate(0deg);}
+  100% {transform: rotate(360deg);}
+}
+
+/* 自定义样式 */
+.thumb-zone {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
+}
+
+/* 滑块样式 */
+input[type="range"] {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 8px;
+  border-radius: 5px;
+  background: #d3d3d3;
+  outline: none;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  background: #0ea5e9;
+  cursor: pointer;
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  background: #0ea5e9;
+  cursor: pointer;
+}
+
+/* 星级评分样式 */
+.star-rating {
+  font-size: 0;
+}
+
+.star-rating span {
+  display: inline-block;
+  font-size: 1.5rem;
+  padding: 0 0.1rem;
+  cursor: pointer;
+}
+
+/* 暗色模式适配 */
+.dark .star-rating .star-filled {
+  color: #fbbf24;
+}
+
+.star-rating .star-filled {
+  color: #f59e0b;
+}
+
+.star-rating .star-empty {
+  color: #d1d5db;
+}
+
+/* 确保内容区域不被底部导航栏遮挡 */
+.content-area {
+  padding-bottom: 120px; /* 增加底部间距，确保按钮可见 */
+}
+
+/* 修复移动端底部按钮可见性问题 */
+.nav-buttons {
+  margin-bottom: 80px; /* 确保在移动设备上按钮不被底部导航栏遮挡 */
+}
+
+/* 车辆详情模态框样式 */
+#car-detail-modal {
+  transition: opacity 0.3s ease-in-out;
+}
+
+.max-h-90vh {
+  max-height: 90vh;
+}
+
+/* 表单元素样式 */
+.pros-list, .cons-list {
+  min-height: 50px;
+}
+
+/* 文件上传区域交互效果 */
+.border-dashed {
+  transition: border-color 0.2s ease-in-out;
+}
+
+.border-dashed:hover {
+  border-color: #0ea5e9;
+}
+
+/* 步骤内容区域样式 */
+.step-content {
+  transition: opacity 0.2s ease-in-out;
+}
+
+/* 修复移动端表单元素样式 */
+@media (max-width: 640px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px !important; /* 防止iOS自动缩放 */
+  }
+
+  /* 确保移动端按钮足够大，易于点击 */
+  button {
+    min-height: 44px;
+  }
+
+  /* 调整移动端的内容间距 */
+  .step-content {
+    padding: 1rem !important;
+  }
+
+  /* 确保滑块在移动端可以正常操作 */
+  input[type="range"]::-webkit-slider-thumb {
+    width: 28px;
+    height: 28px;
+  }
+
+  input[type="range"]::-moz-range-thumb {
+    width: 28px;
+    height: 28px;
+  }
+}
+
+/* 修复iOS Safari底部安全区域问题 */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .thumb-zone {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .content-area {
+    padding-bottom: calc(120px + env(safe-area-inset-bottom));
+  }
+}
+
+/* 车辆对比按钮样式 */
+.compare-car-btn {
+  transition: all 0.2s ease-in-out;
+}
+
+.compare-car-btn:hover {
+  background-color: rgba(14, 165, 233, 0.1);
+}
+
+.dark .compare-car-btn:hover {
+  background-color: rgba(14, 165, 233, 0.2);
+}
+
+/* 卡片样式 */
+.car-card {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.car-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+/* 评分标签样式 */
+.car-card .absolute {
+  transition: all 0.3s ease;
+}
+
+.car-card:hover .absolute {
+  transform: scale(1.1);
+}
+
+/* 按钮悬停效果 */
+.car-card button {
+  transition: all 0.2s ease;
+}
+
+.car-card button:hover {
+  transform: translateY(-2px);
+}
+
+/* 图片容器样式 */
+.car-card .h-40 {
+  overflow: hidden;
+}
+
+.car-card img {
+  transition: transform 0.5s ease;
+}
+
+.car-card:hover img {
+  transform: scale(1.05);
+}
+
+/* 暗色模式适配 */
+@media (prefers-color-scheme: dark) {
+  .car-card:hover {
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
+  }
+}
+
+/* 移动端适配 */
+@media (max-width: 640px) {
+  .car-card:hover {
+    transform: translateY(-3px);
+  }
+} 
