@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>紧凑级车试驾数据收集工具</title>
+    <meta name="description" content="专业的紧凑级车试驾数据收集和对比工具" />
+    <meta name="theme-color" content="#3b82f6" />
+    <link rel="manifest" href="manifest.json" />
+    <link rel="apple-touch-icon" href="icons/icon-192x192.png" />
+    <!-- 引入 TailwindCSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 配置 Tailwind 主题 -->
+    <script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              primary: "#3b82f6",
+              secondary: "#60a5fa",
+            },
+          },
+        },
+      };
+    </script>
+    <!-- 为 Web Components 提供 Tailwind 运行时 -->
+    <script src="https://unpkg.com/tailwindcss-stimulus-components"></script>
+    <!-- 引入图标库 -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+  </head>
+  <body
+    class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200 min-h-screen pb-16"
+  >
+    <header class="bg-primary text-white sticky top-0 z-50 shadow-md">
+      <div
+        class="container mx-auto px-4 py-3 flex justify-between items-center"
+      >
+        <div class="text-xl font-semibold truncate">紧凑级车试驾数据收集</div>
+        <div class="flex space-x-2">
+          <button
+            id="toggleTheme"
+            class="bg-white/20 hover:bg-white/30 rounded-full p-2 transition-colors"
+          >
+            <i class="fas fa-moon dark:hidden"></i>
+            <i class="fas fa-sun hidden dark:inline"></i>
+          </button>
+          <button
+            id="exportData"
+            class="bg-white/20 hover:bg-white/30 rounded px-3 py-1 text-sm transition-colors"
+          >
+            <i class="fas fa-download mr-1"></i>导出
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main class="container mx-auto px-4 py-4">
+      <!-- 首页视图 -->
+      <section id="homeView" class="view">
+        <car-list-component></car-list-component>
+      </section>
+
+      <!-- 记录视图 -->
+      <section id="recordView" class="view hidden">
+        <car-info-form></car-info-form>
+        <rating-tabs-component></rating-tabs-component>
+        <pros-cons-component></pros-cons-component>
+        <overall-rating-component></overall-rating-component>
+      </section>
+
+      <!-- 对比视图 -->
+      <section id="compareView" class="view hidden">
+        <car-comparison-component></car-comparison-component>
+      </section>
+    </main>
+
+    <!-- 底部导航栏 -->
+    <nav
+      class="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 shadow-lg py-2 border-t border-gray-200 dark:border-gray-700 z-40"
+    >
+      <div class="flex justify-around items-center">
+        <a
+          href="#"
+          class="nav-item flex flex-col items-center text-primary"
+          data-view="homeView"
+        >
+          <i class="fas fa-home text-xl mb-1"></i>
+          <span class="text-xs">首页</span>
+        </a>
+        <a
+          href="#"
+          class="nav-item flex flex-col items-center text-gray-500 dark:text-gray-400"
+          data-view="compareView"
+        >
+          <i class="fas fa-chart-bar text-xl mb-1"></i>
+          <span class="text-xs">对比</span>
+        </a>
+        <a
+          href="#"
+          id="addCarNav"
+          class="nav-item flex flex-col items-center text-gray-500 dark:text-gray-400"
+        >
+          <i class="fas fa-plus-circle text-xl mb-1"></i>
+          <span class="text-xs">添加</span>
+        </a>
+      </div>
+    </nav>
+
+    <!-- 语音识别模态框 -->
+    <div
+      id="voiceModal"
+      class="modal fixed inset-0 bg-black/50 z-50 hidden items-center justify-center"
+    >
+      <div
+        class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md mx-4 overflow-hidden"
+      >
+        <div
+          class="flex items-center justify-between p-4 border-b dark:border-gray-700"
+        >
+          <h3 class="text-lg font-semibold text-primary">语音识别</h3>
+          <button
+            class="modal-close text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+          >
+            <i class="fas fa-times text-xl"></i>
+          </button>
+        </div>
+
+        <div class="p-4">
+          <div
+            id="voiceStatus"
+            class="text-center py-3 text-gray-600 dark:text-gray-400"
+          >
+            点击开始录音按钮开始
+          </div>
+          <div
+            id="voiceResult"
+            class="mt-3 p-3 min-h-[100px] border border-gray-300 dark:border-gray-600 rounded-lg"
+          ></div>
+        </div>
+
+        <div class="flex justify-end gap-2 p-4 border-t dark:border-gray-700">
+          <button
+            id="startVoiceBtn"
+            class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-blue-600 transition-colors"
+          >
+            开始录音
+          </button>
+          <button
+            id="cancelVoiceBtn"
+            class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+          >
+            取消
+          </button>
+          <button
+            id="confirmVoiceBtn"
+            class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-blue-600 transition-colors"
+          >
+            确认
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 拍照模态框 -->
+    <div
+      id="photoModal"
+      class="modal fixed inset-0 bg-black/50 z-50 hidden items-center justify-center"
+    >
+      <div
+        class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md mx-4 overflow-hidden"
+      >
+        <div
+          class="flex items-center justify-between p-4 border-b dark:border-gray-700"
+        >
+          <h3 class="text-lg font-semibold text-primary">拍照记录</h3>
+          <button
+            class="modal-close text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+          >
+            <i class="fas fa-times text-xl"></i>
+          </button>
+        </div>
+
+        <div class="p-4">
+          <video
+            id="cameraPreview"
+            class="w-full bg-black rounded-lg aspect-video object-cover"
+            autoplay
+          ></video>
+          <canvas id="photoCanvas" class="hidden"></canvas>
+          <div id="capturedPhoto" class="mt-3 hidden">
+            <img id="photoResult" class="w-full rounded-lg" alt="拍摄结果" />
+          </div>
+        </div>
+
+        <div class="flex justify-end gap-2 p-4 border-t dark:border-gray-700">
+          <button
+            id="capturePhotoBtn"
+            class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-blue-600 transition-colors"
+          >
+            拍照
+          </button>
+          <button
+            id="retakePhotoBtn"
+            class="hidden px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+          >
+            重拍
+          </button>
+          <button
+            id="cancelPhotoBtn"
+            class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+          >
+            取消
+          </button>
+          <button
+            id="confirmPhotoBtn"
+            class="hidden px-4 py-2 bg-primary text-white rounded-lg hover:bg-blue-600 transition-colors"
+          >
+            确认
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Web Components 模板定义 -->
+    <template id="car-list-template">
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md">
+        <div class="p-4 border-b dark:border-gray-700">
+          <h2 class="text-xl font-semibold text-primary">我的试驾记录</h2>
+        </div>
+        <div id="carList" class="divide-y dark:divide-gray-700">
+          <!-- 车辆列表项将通过 JS 动态生成 -->
+        </div>
+        <div class="p-4 flex justify-end">
+          <button
+            id="addNewCarBtn"
+            class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-blue-600 transition-colors"
+          >
+            <i class="fas fa-plus mr-2"></i>添加新车型
+          </button>
+        </div>
+      </div>
+    </template>
+
+    <!-- Web Components 定义 -->
+    <script>
+      // 为 Web Components 中使用 Tailwind 的工具函数
+      function createStyleSheet(element) {
+        const style = document.createElement("style");
+        element.shadowRoot.appendChild(style);
+        return style.sheet;
+      }
+
+      function addTailwindClass(element, className) {
+        // 使用在线 Tailwind 运行时生成对应的 CSS
+        // 简化版实现，实际使用中可能需要更复杂的解析和生成
+        const tw = window.tailwind;
+        if (!tw) return;
+
+        const styles = tw.processClassName(className);
+        const sheet = element._styleSheet || createStyleSheet(element);
+        styles.forEach((style) => {
+          sheet.insertRule(style, sheet.cssRules.length);
+        });
+      }
+
+      // 车辆列表组件
+      class CarListComponent extends HTMLElement {
+        constructor() {
+          super();
+          this.attachShadow({ mode: "open" });
+          this._styleSheet = null;
+        }
+
+        connectedCallback() {
+          // 克隆模板内容
+          const template = document.getElementById("car-list-template");
+          this.shadowRoot.appendChild(template.content.cloneNode(true));
+
+          // 初始化样式表
+          this._styleSheet = createStyleSheet(this);
+
+          // 渲染车辆列表
+          this.renderCarList();
+
+          // 事件监听
+          this.shadowRoot
+            .getElementById("addNewCarBtn")
+            .addEventListener("click", () => {
+              // 发送添加新车型事件
+              document.dispatchEvent(new CustomEvent("app:add-new-car"));
+            });
+        }
+
+        renderCarList() {
+          const carList = this.shadowRoot.getElementById("carList");
+          carList.innerHTML = "";
+
+          // 获取所有车辆数据
+          const cars = this.getCarData();
+
+          if (cars.length === 0) {
+            carList.innerHTML =
+              '<div class="p-8 text-center text-gray-500 dark:text-gray-400">暂无试驾记录，点击添加新车型开始记录。</div>';
+            return;
+          }
+
+          // 渲染每个车辆项
+          cars.forEach((car) => {
+            const carItem = document.createElement("div");
+            carItem.className = "car-item";
+            carItem.innerHTML = `
+                        <div class="p-4 flex justify-between items-center">
+                            <div>
+                                <h3 class="font-medium">${
+                                  car.basic.carBrand || ""
+                                } ${car.basic.carModel || ""} ${
+              car.basic.carTrim || ""
+            }</h3>
+                                <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                                    ${
+                                      car.basic.testDriveDate
+                                        ? `试驾日期: ${car.basic.testDriveDate}`
+                                        : ""
+                                    }
+                                    ${
+                                      car.overall.overallRating
+                                        ? ` | 总评分: ${car.overall.overallRating}/10`
+                                        : ""
+                                    }
+                                </p>
+                            </div>
+                            <div class="flex space-x-2">
+                                <button class="edit-car-btn px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors" data-id="${
+                                  car.id
+                                }">
+                                    <i class="fas fa-edit mr-1"></i>编辑
+                                </button>
+                                <button class="delete-car-btn px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition-colors" data-id="${
+                                  car.id
+                                }">
+                                    <i class="fas fa-trash-alt mr-1"></i>删除
+                                </button>
+                            </div>
+                        </div>
+                    `;
+
+            // 添加事件监听
+            carItem
+              .querySelector(".edit-car-btn")
+              .addEventListener("click", (e) => {
+                const carId = e.target.closest(".edit-car-btn").dataset.id;
+                document.dispatchEvent(
+                  new CustomEvent("app:edit-car", { detail: { carId } })
+                );
+              });
+
+            carItem
+              .querySelector(".delete-car-btn")
+              .addEventListener("click", (e) => {
+                const carId = e.target.closest(".delete-car-btn").dataset.id;
+                if (confirm("确定要删除这条记录吗？此操作不可恢复。")) {
+                  document.dispatchEvent(
+                    new CustomEvent("app:delete-car", { detail: { carId } })
+                  );
+                }
+              });
+
+            carList.appendChild(carItem);
+          });
+        }
+
+        getCarData() {
+          const savedData = localStorage.getItem("carTestDriveData");
+          if (savedData) {
+            try {
+              return JSON.parse(savedData);
+            } catch (e) {
+              console.error("解析保存的数据时出错:", e);
+              return [];
+            }
+          }
+          return [];
+        }
+      }
+
+      // 注册组件
+      customElements.define("car-list-component", CarListComponent);
+
+      // 这里将添加更多组件定义...
+    </script>
+
+    <!-- 主应用脚本 -->
+    <script>
+      // 当前车辆数据
+      let currentCarData = {
+        id: null,
+        basic: {},
+        ratings: {
+          exterior: {},
+          interior: {},
+          space: {},
+          driving: {},
+          nvh: {},
+          smart: {},
+        },
+        advantages: [],
+        disadvantages: [],
+        overall: {},
+        photos: [],
+      };
+
+      // 所有车辆数据
+      let allCarsData = [];
+
+      // 当前语音目标元素
+      let currentVoiceTarget = null;
+
+      // 当前照片类别
+      let currentPhotoCategory = null;
+
+      // DOM 加载完成后初始化应用
+      document.addEventListener("DOMContentLoaded", function () {
+        // 初始化数据
+        loadData();
+
+        // 设置事件监听器
+        setupEventListeners();
+
+        // 初始化主题
+        loadThemePreference();
+      });
+
+      // 加载数据
+      function loadData() {
+        const savedData = localStorage.getItem("carTestDriveData");
+        if (savedData) {
+          try {
+            allCarsData = JSON.parse(savedData);
+          } catch (e) {
+            console.error("解析保存的数据时出错:", e);
+            allCarsData = [];
+          }
+        }
+      }
+
+      // 保存数据
+      function saveData() {
+        localStorage.setItem("carTestDriveData", JSON.stringify(allCarsData));
+        document.dispatchEvent(new CustomEvent("app:data-updated"));
+      }
+
+      // 设置事件监听器
+      function setupEventListeners() {
+        // 视图切换
+        document.querySelectorAll(".nav-item").forEach((item) => {
+          item.addEventListener("click", function (e) {
+            e.preventDefault();
+            const viewId = this.getAttribute("data-view");
+            if (viewId) {
+              switchView(viewId);
+              updateNavigation(viewId);
+            }
+          });
+        });
+
+        // 添加车型按钮
+        document
+          .getElementById("addCarNav")
+          .addEventListener("click", function (e) {
+            e.preventDefault();
+            resetCarForm();
+            switchView("recordView");
+            updateNavigation();
+          });
+
+        // 主题切换
+        document
+          .getElementById("toggleTheme")
+          .addEventListener("click", toggleTheme);
+
+        // 数据导出
+        document
+          .getElementById("exportData")
+          .addEventListener("click", exportAllData);
+
+        // 模态框关闭按钮
+        document.querySelectorAll(".modal-close").forEach((btn) => {
+          btn.addEventListener("click", function () {
+            closeModal(this.closest(".modal").id);
+          });
+        });
+
+        // 语音识别按钮
+        document
+          .getElementById("startVoiceBtn")
+          .addEventListener("click", startVoiceRecognition);
+        document
+          .getElementById("cancelVoiceBtn")
+          .addEventListener("click", () => {
+            closeModal("voiceModal");
+          });
+        document
+          .getElementById("confirmVoiceBtn")
+          .addEventListener("click", confirmVoiceInput);
+
+        // 拍照按钮
+        document
+          .getElementById("capturePhotoBtn")
+          .addEventListener("click", capturePhoto);
+        document
+          .getElementById("retakePhotoBtn")
+          .addEventListener("click", retakePhoto);
+        document
+          .getElementById("cancelPhotoBtn")
+          .addEventListener("click", () => {
+            closeCamera();
+            closeModal("photoModal");
+          });
+        document
+          .getElementById("confirmPhotoBtn")
+          .addEventListener("click", confirmPhoto);
+
+        // 应用事件
+        document.addEventListener("app:add-new-car", resetCarForm);
+        document.addEventListener("app:edit-car", (e) =>
+          editCar(e.detail.carId)
+        );
+        document.addEventListener("app:delete-car", (e) =>
+          deleteCar(e.detail.carId)
+        );
+        document.addEventListener("app:data-updated", refreshData);
+      }
+
+      // 切换视图
+      function switchView(viewId) {
+        document.querySelectorAll(".view").forEach((view) => {
+          view.classList.add("hidden");
+        });
+        document.getElementById(viewId).classList.remove("hidden");
+      }
+
+      // 更新导航状态
+      function updateNavigation(viewId) {
+        document.querySelectorAll(".nav-item").forEach((item) => {
+          const itemViewId = item.getAttribute("data-view");
+          if (itemViewId === viewId) {
+            item.classList.add("text-primary");
+            item.classList.remove("text-gray-500", "dark:text-gray-400");
+          } else if (itemViewId) {
+            item.classList.remove("text-primary");
+            item.classList.add("text-gray-500", "dark:text-gray-400");
+          }
+        });
+      }
+
+      // 主题切换
+      function toggleTheme() {
+        document.documentElement.classList.toggle("dark");
+        localStorage.setItem(
+          "theme",
+          document.documentElement.classList.contains("dark") ? "dark" : "light"
+        );
+      }
+
+      // 加载主题偏好
+      function loadThemePreference() {
+        if (
+          localStorage.getItem("theme") === "dark" ||
+          (window.matchMedia("(prefers-color-scheme: dark)").matches &&
+            !localStorage.getItem("theme"))
+        ) {
+          document.documentElement.classList.add("dark");
+        }
+      }
+
+      // 重置车辆表单
+      function resetCarForm() {
+        currentCarData = {
+          id: Date.now().toString(),
+          basic: {},
+          ratings: {
+            exterior: {},
+            interior: {},
+            space: {},
+            driving: {},
+            nvh: {},
+            smart: {},
+          },
+          advantages: [],
+          disadvantages: [],
+          overall: {},
+          photos: [],
+        };
+
+        // 切换视图
+        switchView("recordView");
+        updateNavigation();
+
+        // 触发表单重置事件
+        document.dispatchEvent(new CustomEvent("app:form-reset"));
+      }
+
+      // 编辑车辆
+      function editCar(carId) {
+        const car = allCarsData.find((c) => c.id === carId);
+        if (!car) return;
+
+        currentCarData = JSON.parse(JSON.stringify(car)); // 深拷贝
+
+        // 切换视图
+        switchView("recordView");
+        updateNavigation();
+
+        // 触发表单填充事件
+        document.dispatchEvent(
+          new CustomEvent("app:form-fill", { detail: { car: currentCarData } })
+        );
+      }
+
+      // 删除车辆
+      function deleteCar(carId) {
+        allCarsData = allCarsData.filter((car) => car.id !== carId);
+        saveData();
+        refreshData();
+      }
+
+      // 刷新数据
+      function refreshData() {
+        // 触发组件更新
+        document.dispatchEvent(new CustomEvent("app:data-refresh"));
+      }
+
+      // 导出所有数据
+      function exportAllData() {
+        const dataStr = JSON.stringify(allCarsData, null, 2);
+        const dataBlob = new Blob([dataStr], { type: "application/json" });
+        const url = URL.createObjectURL(dataBlob);
+
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `车辆试驾数据_${
+          new Date().toISOString().split("T")[0]
+        }.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
+
+      // 打开模态框
+      function openModal(modalId) {
+        document.getElementById(modalId).classList.remove("hidden");
+        document.getElementById(modalId).classList.add("flex");
+      }
+
+      // 关闭模态框
+      function closeModal(modalId) {
+        document.getElementById(modalId).classList.remove("flex");
+        document.getElementById(modalId).classList.add("hidden");
+      }
+
+      // 语音识别相关函数
+      function openVoiceModal(targetId) {
+        currentVoiceTarget = targetId;
+        document.getElementById("voiceResult").textContent = "";
+        document.getElementById("voiceStatus").textContent =
+          "点击开始录音按钮开始";
+        openModal("voiceModal");
+      }
+
+      function startVoiceRecognition() {
+        if (!("webkitSpeechRecognition" in window)) {
+          alert("您的浏览器不支持语音识别功能，请使用 Chrome 浏览器。");
+          return;
+        }
+
+        const recognition = new webkitSpeechRecognition();
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.lang = "zh-CN";
+
+        let finalTranscript = "";
+
+        recognition.onstart = function () {
+          document.getElementById("voiceStatus").textContent = "正在录音...";
+          document.getElementById("startVoiceBtn").textContent = "停止录音";
+          document.getElementById("startVoiceBtn").onclick = function () {
+            recognition.stop();
+          };
+        };
+
+        recognition.onresult = function (event) {
+          let interimTranscript = "";
+
+          for (let i = event.resultIndex; i < event.results.length; ++i) {
+            if (event.results[i].isFinal) {
+              finalTranscript += event.results[i][0].transcript;
+            } else {
+              interimTranscript += event.results[i][0].transcript;
+            }
+          }
+
+          document.getElementById("voiceResult").innerHTML =
+            finalTranscript +
+            '<span class="text-gray-500">' +
+            interimTranscript +
+            "</span>";
+        };
+
+        recognition.onerror = function (event) {
+          console.error("语音识别错误", event.error);
+          document.getElementById("voiceStatus").textContent =
+            "错误: " + event.error;
+          resetVoiceUI();
+        };
+
+        recognition.onend = function () {
+          resetVoiceUI();
+        };
+
+        function resetVoiceUI() {
+          document.getElementById("voiceStatus").textContent = "录音已结束";
+          document.getElementById("startVoiceBtn").textContent = "开始录音";
+          document.getElementById("startVoiceBtn").onclick =
+            startVoiceRecognition;
+        }
+
+        recognition.start();
+      }
+
+      function confirmVoiceInput() {
+        const text = document.getElementById("voiceResult").textContent.trim();
+
+        if (text && currentVoiceTarget) {
+          // 发送语音内容事件
+          document.dispatchEvent(
+            new CustomEvent("app:voice-input", {
+              detail: {
+                targetId: currentVoiceTarget,
+                text: text,
+              },
+            })
+          );
+        }
+
+        closeModal("voiceModal");
+      }
+
+      // 拍照相关函数
+      function openCameraModal(category) {
+        currentPhotoCategory = category;
+        document.getElementById("capturePhotoBtn").style.display = "block";
+        document.getElementById("retakePhotoBtn").style.display = "none";
+        document.getElementById("confirmPhotoBtn").style.display = "none";
+        document.getElementById("capturedPhoto").style.display = "none";
+        document.getElementById("cameraPreview").style.display = "block";
+
+        startCamera();
+        openModal("photoModal");
+      }
+
+      function startCamera() {
+        const constraints = {
+          video: {
+            facingMode: "environment",
+          },
+        };
+
+        const video = document.getElementById("cameraPreview");
+
+        navigator.mediaDevices
+          .getUserMedia(constraints)
+          .then(function (stream) {
+            window.currentStream = stream;
+            video.srcObject = stream;
+          })
+          .catch(function (err) {
+            console.error("启动摄像头失败:", err);
+            alert("无法访问摄像头，请确保已授予权限。");
+            closeModal("photoModal");
+          });
+      }
+
+      function closeCamera() {
+        if (window.currentStream) {
+          window.currentStream.getTracks().forEach((track) => {
+            track.stop();
+          });
+        }
+      }
+
+      function capturePhoto() {
+        const video = document.getElementById("cameraPreview");
+        const canvas = document.getElementById("photoCanvas");
+        const photo = document.getElementById("photoResult");
+
+        // 设置画布尺寸
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+
+        // 将视频帧绘制到画布
+        const context = canvas.getContext("2d");
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        // 将画布转换为图片URL
+        const dataUrl = canvas.toDataURL("image/jpeg");
+        photo.src = dataUrl;
+
+        // 显示图片预览，隐藏视频
+        document.getElementById("capturedPhoto").style.display = "block";
+        document.getElementById("cameraPreview").style.display = "none";
+
+        // 显示确认和重拍按钮，隐藏拍照按钮
+        document.getElementById("capturePhotoBtn").style.display = "none";
+        document.getElementById("retakePhotoBtn").style.display = "block";
+        document.getElementById("confirmPhotoBtn").style.display = "block";
+      }
+
+      function retakePhoto() {
+        document.getElementById("capturedPhoto").style.display = "none";
+        document.getElementById("cameraPreview").style.display = "block";
+        document.getElementById("capturePhotoBtn").style.display = "block";
+        document.getElementById("retakePhotoBtn").style.display = "none";
+        document.getElementById("confirmPhotoBtn").style.display = "none";
+      }
+
+      function confirmPhoto() {
+        const dataUrl = document.getElementById("photoResult").src;
+
+        // 触发照片保存事件
+        document.dispatchEvent(
+          new CustomEvent("app:photo-captured", {
+            detail: {
+              category: currentPhotoCategory,
+              dataUrl: dataUrl,
+            },
+          })
+        );
+
+        closeCamera();
+        closeModal("photoModal");
+      }
+    </script>
+  </body>
+</html>

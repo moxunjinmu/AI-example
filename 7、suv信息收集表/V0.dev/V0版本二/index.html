@@ -1,0 +1,1470 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>紧凑级车试驾数据收集工具</title>
+    <meta name="description" content="专业的紧凑级车试驾数据收集和对比工具">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#3b82f6">
+    <link rel="icon" href="icons/icon-192x192.png">
+    <link rel="apple-touch-icon" href="icons/icon-192x192.png">
+    <!-- TailwindCSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- jQuery CDN -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Feather Icons -->
+    <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
+    <style>
+        /* 自定义滑块样式 */
+        .custom-range {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 8px;
+            border-radius: 4px;
+            background: #e5e7eb;
+            outline: none;
+        }
+        
+        .custom-range::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #3b82f6;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .custom-range::-webkit-slider-thumb:hover {
+            background: #2563eb;
+            transform: scale(1.1);
+        }
+        
+        /* 暗黑模式样式调整 */
+        .dark .custom-range {
+            background: #4b5563;
+        }
+        
+        .dark .custom-range::-webkit-slider-thumb {
+            background: #60a5fa;
+        }
+        
+        .dark .custom-range::-webkit-slider-thumb:hover {
+            background: #3b82f6;
+        }
+        
+        /* 动画效果 */
+        .fade-in {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* 确保内容不会被底部导航栏遮挡 */
+        .pb-safe {
+            padding-bottom: calc(env(safe-area-inset-bottom) + 5rem);
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-900 transition-colors duration-300 dark:bg-gray-900 dark:text-gray-100">
+    <div id="app" class="min-h-screen flex flex-col">
+        <!-- 顶部导航栏 -->
+        <header class="sticky top-0 z-50 bg-white dark:bg-gray-800 shadow-sm">
+            <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+                <h1 class="text-xl font-bold text-blue-600 dark:text-blue-400">
+                    <i data-feather="clipboard" class="inline h-5 w-5 mr-1"></i>
+                    试驾数据
+                </h1>
+                <div class="flex items-center space-x-3">
+                    <button id="darkModeToggle" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+                        <i data-feather="moon" class="h-5 w-5 dark:hidden"></i>
+                        <i data-feather="sun" class="h-5 w-5 hidden dark:block"></i>
+                    </button>
+                    <button id="exportDataBtn" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+                        <i data-feather="download" class="h-5 w-5"></i>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- 主内容区 -->
+        <main class="flex-grow container mx-auto px-4 py-6 pb-safe">
+            <!-- 视图切换 -->
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm mb-6 overflow-hidden">
+                <div class="grid grid-cols-3 divide-x divide-gray-200 dark:divide-gray-700">
+                    <button id="viewRecordBtn" class="py-3 px-2 flex flex-col items-center justify-center text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 font-medium">
+                        <i data-feather="edit-3" class="h-5 w-5 mb-1"></i>
+                        <span>记录</span>
+                    </button>
+                    <button id="viewListBtn" class="py-3 px-2 flex flex-col items-center justify-center text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                        <i data-feather="list" class="h-5 w-5 mb-1"></i>
+                        <span>列表</span>
+                    </button>
+                    <button id="viewCompareBtn" class="py-3 px-2 flex flex-col items-center justify-center text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                        <i data-feather="bar-chart-2" class="h-5 w-5 mb-1"></i>
+                        <span>对比</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 记录视图 -->
+            <div id="recordView" class="fade-in">
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5 mb-6">
+                    <h2 class="text-lg font-semibold mb-4 flex items-center">
+                        <i data-feather="info" class="h-5 w-5 mr-2 text-blue-500"></i>
+                        车辆信息
+                    </h2>
+                    <div class="space-y-4">
+                        <div>
+                            <label for="carBrand" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">品牌型号</label>
+                            <input type="text" id="carBrand" class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors" placeholder="例如：本田思域">
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label for="carYear" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">年款</label>
+                                <input type="text" id="carYear" class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors" placeholder="例如：2023款">
+                            </div>
+                            <div>
+                                <label for="carPrice" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">价格区间</label>
+                                <input type="text" id="carPrice" class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors" placeholder="例如：15-20万">
+                            </div>
+                        </div>
+                        <div>
+                            <label for="carConfig" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">配置信息</label>
+                            <input type="text" id="carConfig" class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors" placeholder="例如：1.5T 顶配 CVT">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5 mb-6">
+                    <h2 class="text-lg font-semibold mb-4 flex items-center">
+                        <i data-feather="star" class="h-5 w-5 mr-2 text-blue-500"></i>
+                        评分项目
+                    </h2>
+                    <div class="space-y-5">
+                        <div class="rating-item">
+                            <div class="flex justify-between items-center mb-2">
+                                <label for="ratingPower" class="text-sm font-medium text-gray-700 dark:text-gray-300">动力表现</label>
+                                <span id="ratingPowerValue" class="text-sm font-semibold text-blue-600 dark:text-blue-400">5</span>
+                            </div>
+                            <input type="range" id="ratingPower" min="1" max="10" value="5" class="custom-range">
+                        </div>
+                        <div class="rating-item">
+                            <div class="flex justify-between items-center mb-2">
+                                <label for="ratingHandling" class="text-sm font-medium text-gray-700 dark:text-gray-300">操控感受</label>
+                                <span id="ratingHandlingValue" class="text-sm font-semibold text-blue-600 dark:text-blue-400">5</span>
+                            </div>
+                            <input type="range" id="ratingHandling" min="1" max="10" value="5" class="custom-range">
+                        </div>
+                        <div class="rating-item">
+                            <div class="flex justify-between items-center mb-2">
+                                <label for="ratingComfort" class="text-sm font-medium text-gray-700 dark:text-gray-300">舒适性</label>
+                                <span id="ratingComfortValue" class="text-sm font-semibold text-blue-600 dark:text-blue-400">5</span>
+                            </div>
+                            <input type="range" id="ratingComfort" min="1" max="10" value="5" class="custom-range">
+                        </div>
+                        <div class="rating-item">
+                            <div class="flex justify-between items-center mb-2">
+                                <label for="ratingInterior" class="text-sm font-medium text-gray-700 dark:text-gray-300">内饰质感</label>
+                                <span id="ratingInteriorValue" class="text-sm font-semibold text-blue-600 dark:text-blue-400">5</span>
+                            </div>
+                            <input type="range" id="ratingInterior" min="1" max="10" value="5" class="custom-range">
+                        </div>
+                        <div class="rating-item">
+                            <div class="flex justify-between items-center mb-2">
+                                <label for="ratingSpace" class="text-sm font-medium text-gray-700 dark:text-gray-300">空间表现</label>
+                                <span id="ratingSpaceValue" class="text-sm font-semibold text-blue-600 dark:text-blue-400">5</span>
+                            </div>
+                            <input type="range" id="ratingSpace" min="1" max="10" value="5" class="custom-range">
+                        </div>
+                        <div class="rating-item">
+                            <div class="flex justify-between items-center mb-2">
+                                <label for="ratingFuelEconomy" class="text-sm font-medium text-gray-700 dark:text-gray-300">油耗表现</label>
+                                <span id="ratingFuelEconomyValue" class="text-sm font-semibold text-blue-600 dark:text-blue-400">5</span>
+                            </div>
+                            <input type="range" id="ratingFuelEconomy" min="1" max="10" value="5" class="custom-range">
+                        </div>
+                        <div class="rating-item">
+                            <div class="flex justify-between items-center mb-2">
+                                <label for="ratingTechnology" class="text-sm font-medium text-gray-700 dark:text-gray-300">科技配置</label>
+                                <span id="ratingTechnologyValue" class="text-sm font-semibold text-blue-600 dark:text-blue-400">5</span>
+                            </div>
+                            <input type="range" id="ratingTechnology" min="1" max="10" value="5" class="custom-range">
+                        </div>
+                        <div class="rating-item">
+                            <div class="flex justify-between items-center mb-2">
+                                <label for="ratingValueForMoney" class="text-sm font-medium text-gray-700 dark:text-gray-300">性价比</label>
+                                <span id="ratingValueForMoneyValue" class="text-sm font-semibold text-blue-600 dark:text-blue-400">5</span>
+                            </div>
+                            <input type="range" id="ratingValueForMoney" min="1" max="10" value="5" class="custom-range">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5 mb-6">
+                    <h2 class="text-lg font-semibold mb-4 flex items-center">
+                        <i data-feather="mic" class="h-5 w-5 mr-2 text-blue-500"></i>
+                        媒体记录
+                    </h2>
+                    <div class="space-y-4">
+                        <div>
+                            <label for="textNotes" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">文字笔记</label>
+                            <textarea id="textNotes" rows="3" class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors" placeholder="记录试驾感受..."></textarea>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">图片记录</label>
+                            <div class="grid grid-cols-3 gap-2 mb-2" id="imagePreviewContainer"></div>
+                            <label for="imageUpload" class="flex items-center justify-center w-full h-20 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                                <div class="flex flex-col items-center">
+                                    <i data-feather="camera" class="h-6 w-6 text-gray-400 mb-1"></i>
+                                    <span class="text-sm text-gray-500 dark:text-gray-400">添加图片</span>
+                                </div>
+                                <input id="imageUpload" type="file" accept="image/*" multiple class="hidden">
+                            </label>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">语音记录</label>
+                            <div id="audioRecordingContainer" class="space-y-2"></div>
+                            <div class="flex items-center space-x-2 mt-2">
+                                <button id="startRecordingBtn" class="flex items-center justify-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
+                                    <i data-feather="mic" class="h-4 w-4 mr-1"></i>
+                                    开始录音
+                                </button>
+                                <button id="stopRecordingBtn" class="flex items-center justify-center px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors hidden">
+                                    <i data-feather="square" class="h-4 w-4 mr-1"></i>
+                                    停止录音
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5 mb-6">
+                    <h2 class="text-lg font-semibold mb-4 flex items-center">
+                        <i data-feather="thumbs-up" class="h-5 w-5 mr-2 text-blue-500"></i>
+                        优缺点标记
+                    </h2>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">优点</label>
+                            <div class="flex flex-wrap gap-2 mb-2" id="prosContainer"></div>
+                            <div class="flex">
+                                <input type="text" id="newProInput" class="flex-grow px-4 py-2 rounded-l-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors" placeholder="添加优点...">
+                                <button id="addProBtn" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-r-lg transition-colors">
+                                    <i data-feather="plus" class="h-5 w-5"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">缺点</label>
+                            <div class="flex flex-wrap gap-2 mb-2" id="consContainer"></div>
+                            <div class="flex">
+                                <input type="text" id="newConInput" class="flex-grow px-4 py-2 rounded-l-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors" placeholder="添加缺点...">
+                                <button id="addConBtn" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-r-lg transition-colors">
+                                    <i data-feather="plus" class="h-5 w-5"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex justify-center space-x-4 mb-6">
+                    <button id="saveRecordBtn" class="flex-1 flex items-center justify-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-md hover:shadow-lg transition-all transform hover:-translate-y-1">
+                        <i data-feather="save" class="h-5 w-5 mr-2"></i>
+                        保存记录
+                    </button>
+                    <button id="resetFormBtn" class="flex items-center justify-center px-6 py-3 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg shadow-md hover:shadow-lg transition-all transform hover:-translate-y-1">
+                        <i data-feather="refresh-cw" class="h-5 w-5 mr-2"></i>
+                        重置
+                    </button>
+                </div>
+            </div>
+
+            <!-- 列表视图 -->
+            <div id="listView" class="fade-in hidden">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-lg font-semibold">已保存的记录</h2>
+                    <div class="relative">
+                        <input type="text" id="searchInput" class="pl-9 pr-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors" placeholder="搜索...">
+                        <i data-feather="search" class="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400"></i>
+                    </div>
+                </div>
+                
+                <div id="recordsList" class="space-y-4">
+                    <!-- 记录列表将通过JavaScript动态生成 -->
+                    <div class="text-center py-10 text-gray-500 dark:text-gray-400">
+                        <i data-feather="inbox" class="h-12 w-12 mx-auto mb-3 opacity-50"></i>
+                        <p>暂无保存的记录</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 对比视图 -->
+            <div id="compareView" class="fade-in hidden">
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5 mb-6">
+                    <h2 class="text-lg font-semibold mb-4">选择要对比的车辆</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label for="compareCar1" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">车辆 1</label>
+                            <select id="compareCar1" class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors">
+                                <option value="">选择车辆...</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="compareCar2" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">车辆 2</label>
+                            <select id="compareCar2" class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors">
+                                <option value="">选择车辆...</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button id="startCompareBtn" class="w-full flex items-center justify-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
+                        <i data-feather="bar-chart-2" class="h-5 w-5 mr-2"></i>
+                        开始对比
+                    </button>
+                </div>
+                
+                <div id="compareResultContainer" class="hidden">
+                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5 mb-6">
+                        <h3 class="text-lg font-semibold mb-4">基本信息对比</h3>
+                        <div class="grid grid-cols-3 gap-4">
+                            <div class="col-span-1"></div>
+                            <div id="car1Info" class="col-span-1 text-center font-medium"></div>
+                            <div id="car2Info" class="col-span-1 text-center font-medium"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5 mb-6">
+                        <h3 class="text-lg font-semibold mb-4">评分对比</h3>
+                        <div class="aspect-square w-full max-w-md mx-auto">
+                            <canvas id="radarChart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5">
+                            <h3 class="text-lg font-semibold mb-4">优点对比</h3>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div id="car1Pros" class="space-y-2"></div>
+                                <div id="car2Pros" class="space-y-2"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5">
+                            <h3 class="text-lg font-semibold mb-4">缺点对比</h3>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div id="car1Cons" class="space-y-2"></div>
+                                <div id="car2Cons" class="space-y-2"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5 mb-6">
+                        <h3 class="text-lg font-semibold mb-4">笔记对比</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <h4 id="car1NotesTitle" class="font-medium mb-2"></h4>
+                                <div id="car1Notes" class="p-3 bg-gray-100 dark:bg-gray-700 rounded-lg"></div>
+                            </div>
+                            <div>
+                                <h4 id="car2NotesTitle" class="font-medium mb-2"></h4>
+                                <div id="car2Notes" class="p-3 bg-gray-100 dark:bg-gray-700 rounded-lg"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- 底部状态栏 -->
+        <footer class="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 shadow-lg border-t border-gray-200 dark:border-gray-700 z-40">
+            <div class="container mx-auto px-4 py-2">
+                <div class="flex justify-between items-center">
+                    <div class="text-sm text-gray-600 dark:text-gray-400">
+                        <span id="recordCount">0</span> 条记录
+                    </div>
+                    <div class="text-sm text-gray-600 dark:text-gray-400">
+                        <span id="storageUsage">0</span> / <span id="storageLimit">0</span> MB
+                    </div>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- 提示框 -->
+    <div id="toast" class="fixed top-4 right-4 z-50 max-w-xs bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 transform transition-transform duration-300 translate-x-full opacity-0">
+        <div class="flex p-4">
+            <div id="toastIcon" class="flex-shrink-0 w-6 h-6 mr-3"></div>
+            <div>
+                <div id="toastTitle" class="font-medium"></div>
+                <div id="toastMessage" class="text-sm text-gray-500 dark:text-gray-400"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 确认对话框 -->
+    <div id="confirmDialog" class="fixed inset-0 z-50 flex items-center justify-center hidden">
+        <div class="absolute inset-0 bg-black bg-opacity-50"></div>
+        <div class="relative bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full mx-4 p-6">
+            <h3 id="confirmTitle" class="text-lg font-semibold mb-2"></h3>
+            <p id="confirmMessage" class="text-gray-600 dark:text-gray-400 mb-6"></p>
+            <div class="flex justify-end space-x-3">
+                <button id="confirmCancelBtn" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg transition-colors">
+                    取消
+                </button>
+                <button id="confirmOkBtn" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors">
+                    确认
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 全局变量
+        let darkMode = localStorage.getItem('darkMode') === 'true';
+        let currentView = 'record';
+        let carRecords = [];
+        let currentRecordId = null;
+        let mediaRecorder = null;
+        let audioChunks = [];
+        let recordingCount = 0;
+        let radarChart = null;
+
+        // 初始化应用
+        $(document).ready(function() {
+            // 初始化图标
+            feather.replace();
+            
+            // 初始化深色模式
+            updateDarkMode();
+            
+            // 加载保存的记录
+            loadRecords();
+            
+            // 更新存储使用情况
+            updateStorageInfo();
+            
+            // 初始化事件监听器
+            initEventListeners();
+            
+            // 注册Service Worker
+            registerServiceWorker();
+        });
+
+        // 初始化事件监听器
+        function initEventListeners() {
+            // 深色模式切换
+            $('#darkModeToggle').on('click', function() {
+                darkMode = !darkMode;
+                localStorage.setItem('darkMode', darkMode);
+                updateDarkMode();
+            });
+            
+            // 视图切换
+            $('#viewRecordBtn').on('click', function() { switchView('record'); });
+            $('#viewListBtn').on('click', function() { switchView('list'); });
+            $('#viewCompareBtn').on('click', function() { switchView('compare'); });
+            
+            // 评分滑块事件
+            $('.rating-item input[type="range"]').on('input', function() {
+                const id = $(this).attr('id');
+                const value = $(this).val();
+                $(`#${id}Value`).text(value);
+            });
+            
+            // 图片上传
+            $('#imageUpload').on('change', handleImageUpload);
+            
+            // 录音控制
+            $('#startRecordingBtn').on('click', startRecording);
+            $('#stopRecordingBtn').on('click', stopRecording);
+            
+            // 添加优缺点
+            $('#addProBtn').on('click', function() {
+                addProCon('pro', $('#newProInput').val());
+                $('#newProInput').val('');
+            });
+            
+            $('#addConBtn').on('click', function() {
+                addProCon('con', $('#newConInput').val());
+                $('#newConInput').val('');
+            });
+            
+            // 保存记录
+            $('#saveRecordBtn').on('click', saveRecord);
+            
+            // 重置表单
+            $('#resetFormBtn').on('click', resetForm);
+            
+            // 搜索功能
+            $('#searchInput').on('input', function() {
+                const searchTerm = $(this).val().toLowerCase();
+                filterRecords(searchTerm);
+            });
+            
+            // 开始对比
+            $('#startCompareBtn').on('click', startCompare);
+            
+            // 导出数据
+            $('#exportDataBtn').on('click', exportData);
+            
+            // 回车键添加优缺点
+            $('#newProInput').on('keypress', function(e) {
+                if (e.which === 13) {
+                    $('#addProBtn').click();
+                }
+            });
+            
+            $('#newConInput').on('keypress', function(e) {
+                if (e.which === 13) {
+                    $('#addConBtn').click();
+                }
+            });
+        }
+
+        // 更新深色模式
+        function updateDarkMode() {
+            if (darkMode) {
+                $('body').addClass('dark');
+            } else {
+                $('body').removeClass('dark');
+            }
+            feather.replace();
+        }
+
+        // 切换视图
+        function switchView(view) {
+            currentView = view;
+            
+            // 隐藏所有视图
+            $('#recordView, #listView, #compareView').addClass('hidden');
+            
+            // 重置导航按钮样式
+            $('#viewRecordBtn, #viewListBtn, #viewCompareBtn').removeClass('text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30').addClass('text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50');
+            
+            // 显示选中的视图
+            if (view === 'record') {
+                $('#recordView').removeClass('hidden');
+                $('#viewRecordBtn').removeClass('text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50').addClass('text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30');
+            } else if (view === 'list') {
+                $('#listView').removeClass('hidden');
+                $('#viewListBtn').removeClass('text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50').addClass('text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30');
+                renderRecordsList();
+            } else if (view === 'compare') {
+                $('#compareView').removeClass('hidden');
+                $('#viewCompareBtn').removeClass('text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50').addClass('text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30');
+                populateCompareSelects();
+            }
+        }
+
+        // 处理图片上传
+        function handleImageUpload(event) {
+            const files = event.target.files;
+            
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    const imgSrc = e.target.result;
+                    const imgElement = $(`
+                        <div class="relative group">
+                            <img src="${imgSrc}" class="w-full h-24 object-cover rounded-lg" />
+                            <button class="delete-image-btn absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <i data-feather="x" class="h-3 w-3"></i>
+                            </button>
+                        </div>
+                    `);
+                    
+                    $('#imagePreviewContainer').append(imgElement);
+                    feather.replace();
+                    
+                    imgElement.find('.delete-image-btn').on('click', function() {
+                        imgElement.remove();
+                    });
+                };
+                
+                reader.readAsDataURL(file);
+            }
+        }
+
+        // 开始录音
+        function startRecording() {
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                navigator.mediaDevices.getUserMedia({ audio: true })
+                    .then(function(stream) {
+                        mediaRecorder = new MediaRecorder(stream);
+                        audioChunks = [];
+                        
+                        mediaRecorder.ondataavailable = function(e) {
+                            audioChunks.push(e.data);
+                        };
+                        
+                        mediaRecorder.onstop = function() {
+                            const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                            const audioUrl = URL.createObjectURL(audioBlob);
+                            
+                            recordingCount++;
+                            const recordingId = `recording-${Date.now()}`;
+                            
+                            const audioElement = $(`
+                                <div id="${recordingId}" class="flex items-center justify-between p-2 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                                    <div class="flex items-center">
+                                        <i data-feather="mic" class="h-4 w-4 mr-2 text-blue-500"></i>
+                                        <span class="text-sm">录音 ${recordingCount}</span>
+                                    </div>
+                                    <div class="flex items-center space-x-2">
+                                        <button class="play-audio-btn p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600">
+                                            <i data-feather="play" class="h-4 w-4"></i>
+                                        </button>
+                                        <button class="delete-audio-btn p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600">
+                                            <i data-feather="trash-2" class="h-4 w-4 text-red-500"></i>
+                                        </button>
+                                    </div>
+                                    <audio class="hidden" src="${audioUrl}"></audio>
+                                </div>
+                            `);
+                            
+                            $('#audioRecordingContainer').append(audioElement);
+                            feather.replace();
+                            
+                            audioElement.find('.play-audio-btn').on('click', function() {
+                                const audio = audioElement.find('audio')[0];
+                                if (audio.paused) {
+                                    audio.play();
+                                    $(this).find('i').replaceWith(feather.icons['pause'].toSvg({ class: 'h-4 w-4' }));
+                                } else {
+                                    audio.pause();
+                                    $(this).find('i').replaceWith(feather.icons['play'].toSvg({ class: 'h-4 w-4' }));
+                                }
+                            });
+                            
+                            audioElement.find('.delete-audio-btn').on('click', function() {
+                                audioElement.remove();
+                            });
+                            
+                            audioElement.find('audio').on('ended', function() {
+                                audioElement.find('.play-audio-btn i').replaceWith(feather.icons['play'].toSvg({ class: 'h-4 w-4' }));
+                            });
+                        };
+                        
+                        mediaRecorder.start();
+                        $('#startRecordingBtn').addClass('hidden');
+                        $('#stopRecordingBtn').removeClass('hidden');
+                        
+                        showToast('info', '录音已开始', '请对着麦克风说话...');
+                    })
+                    .catch(function(err) {
+                        showToast('error', '录音失败', '无法访问麦克风: ' + err.message);
+                    });
+            } else {
+                showToast('error', '不支持录音', '您的浏览器不支持录音功能');
+            }
+        }
+
+        // 停止录音
+        function stopRecording() {
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+                mediaRecorder.stream.getTracks().forEach(track => track.stop());
+                $('#startRecordingBtn').removeClass('hidden');
+                $('#stopRecordingBtn').addClass('hidden');
+                
+                showToast('success', '录音已保存', '录音已成功保存');
+            }
+        }
+
+        // 添加优缺点
+        function addProCon(type, text) {
+            if (!text.trim()) return;
+            
+            const container = type === 'pro' ? $('#prosContainer') : $('#consContainer');
+            const bgColor = type === 'pro' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200' : 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200';
+            const icon = type === 'pro' ? 'thumbs-up' : 'thumbs-down';
+            
+            const element = $(`
+                <div class="flex items-center ${bgColor} px-3 py-1 rounded-full text-sm">
+                    <i data-feather="${icon}" class="h-3 w-3 mr-1"></i>
+                    <span>${text}</span>
+                    <button class="ml-2 delete-procon-btn">
+                        <i data-feather="x" class="h-3 w-3"></i>
+                    </button>
+                </div>
+            `);
+            
+            container.append(element);
+            feather.replace();
+            
+            element.find('.delete-procon-btn').on('click', function() {
+                element.remove();
+            });
+        }
+
+        // 保存记录
+        function saveRecord() {
+            // 验证必填字段
+            if (!$('#carBrand').val().trim()) {
+                showToast('error', '保存失败', '请填写品牌型号');
+                return;
+            }
+            
+            // 收集表单数据
+            const record = {
+                id: currentRecordId || Date.now().toString(),
+                timestamp: new Date().toISOString(),
+                carInfo: {
+                    brand: $('#carBrand').val(),
+                    year: $('#carYear').val(),
+                    price: $('#carPrice').val(),
+                    config: $('#carConfig').val()
+                },
+                ratings: {
+                    power: parseInt($('#ratingPower').val()),
+                    handling: parseInt($('#ratingHandling').val()),
+                    comfort: parseInt($('#ratingComfort').val()),
+                    interior: parseInt($('#ratingInterior').val()),
+                    space: parseInt($('#ratingSpace').val()),
+                    fuelEconomy: parseInt($('#ratingFuelEconomy').val()),
+                    technology: parseInt($('#ratingTechnology').val()),
+                    valueForMoney: parseInt($('#ratingValueForMoney').val())
+                },
+                notes: $('#textNotes').val(),
+                images: [],
+                recordings: [],
+                pros: [],
+                cons: []
+            };
+            
+            // 收集图片
+            $('#imagePreviewContainer img').each(function() {
+                record.images.push($(this).attr('src'));
+            });
+            
+            // 收集录音
+            $('#audioRecordingContainer audio').each(function() {
+                record.recordings.push($(this).attr('src'));
+            });
+            
+            // 收集优点
+            $('#prosContainer span').each(function() {
+                record.pros.push($(this).text());
+            });
+            
+            // 收集缺点
+            $('#consContainer span').each(function() {
+                record.cons.push($(this).text());
+            });
+            
+            // 保存到本地存储
+            saveRecordToStorage(record);
+            
+            // 重置表单
+            resetForm();
+            
+            // 显示成功提示
+            showToast('success', '保存成功', '试驾记录已保存');
+            
+            // 更新记录计数
+            updateStorageInfo();
+        }
+
+        // 保存记录到本地存储
+        function saveRecordToStorage(record) {
+            // 加载现有记录
+            loadRecords();
+            
+            // 查找是否存在相同ID的记录
+            const existingIndex = carRecords.findIndex(r => r.id === record.id);
+            
+            if (existingIndex !== -1) {
+                // 更新现有记录
+                carRecords[existingIndex] = record;
+            } else {
+                // 添加新记录
+                carRecords.push(record);
+            }
+            
+            // 保存到本地存储
+            localStorage.setItem('carRecords', JSON.stringify(carRecords));
+            
+            // 重置当前记录ID
+            currentRecordId = null;
+        }
+
+        // 加载记录
+        function loadRecords() {
+            const records = localStorage.getItem('carRecords');
+            carRecords = records ? JSON.parse(records) : [];
+        }
+
+        // 重置表单
+        function resetForm() {
+            // 重置车辆信息
+            $('#carBrand, #carYear, #carPrice, #carConfig').val('');
+            
+            // 重置评分
+            $('.rating-item input[type="range"]').val(5);
+            $('.rating-item span[id$="Value"]').text(5);
+            
+            // 重置笔记
+            $('#textNotes').val('');
+            
+            // 清空图片预览
+            $('#imagePreviewContainer').empty();
+            
+            // 清空录音
+            $('#audioRecordingContainer').empty();
+            recordingCount = 0;
+            
+            // 清空优缺点
+            $('#prosContainer, #consContainer').empty();
+            $('#newProInput, #newConInput').val('');
+            
+            // 重置当前记录ID
+            currentRecordId = null;
+        }
+
+        // 渲染记录列表
+        function renderRecordsList() {
+            const container = $('#recordsList');
+            container.empty();
+            
+            if (carRecords.length === 0) {
+                container.html(`
+                    <div class="text-center py-10 text-gray-500 dark:text-gray-400">
+                        <i data-feather="inbox" class="h-12 w-12 mx-auto mb-3 opacity-50"></i>
+                        <p>暂无保存的记录</p>
+                    </div>
+                `);
+                feather.replace();
+                return;
+            }
+            
+            // 按时间倒序排列
+            const sortedRecords = [...carRecords].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+            
+            sortedRecords.forEach(record => {
+                const date = new Date(record.timestamp);
+                const formattedDate = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`;
+                
+                const recordElement = $(`
+                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden transition-transform hover:shadow-md hover:-translate-y-1" data-record-id="${record.id}">
+                        <div class="p-4">
+                            <div class="flex justify-between items-start mb-2">
+                                <h3 class="font-semibold text-lg">${record.carInfo.brand}</h3>
+                                <span class="text-xs text-gray-500 dark:text-gray-400">${formattedDate}</span>
+                            </div>
+                            <div class="flex flex-wrap gap-2 mb-3">
+                                ${record.carInfo.year ? `<span class="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded-md text-xs">${record.carInfo.year}</span>` : ''}
+                                ${record.carInfo.price ? `<span class="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded-md text-xs">${record.carInfo.price}</span>` : ''}
+                                ${record.carInfo.config ? `<span class="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded-md text-xs">${record.carInfo.config}</span>` : ''}
+                            </div>
+                            <div class="flex items-center text-sm text-gray-600 dark:text-gray-400 mb-3">
+                                <div class="flex items-center mr-4">
+                                    <i data-feather="image" class="h-4 w-4 mr-1"></i>
+                                    <span>${record.images.length}</span>
+                                </div>
+                                <div class="flex items-center mr-4">
+                                    <i data-feather="mic" class="h-4 w-4 mr-1"></i>
+                                    <span>${record.recordings.length}</span>
+                                </div>
+                                <div class="flex items-center">
+                                    <i data-feather="star" class="h-4 w-4 mr-1"></i>
+                                    <span>${calculateAverageRating(record.ratings).toFixed(1)}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex border-t border-gray-200 dark:border-gray-700 divide-x divide-gray-200 dark:divide-gray-700">
+                            <button class="edit-record-btn flex-1 py-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors">
+                                <i data-feather="edit-2" class="h-4 w-4 inline-block mr-1"></i>
+                                编辑
+                            </button>
+                            <button class="delete-record-btn flex-1 py-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+                                <i data-feather="trash-2" class="h-4 w-4 inline-block mr-1"></i>
+                                删除
+                            </button>
+                        </div>
+                    </div>
+                `);
+                
+                container.append(recordElement);
+                
+                // 编辑记录
+                recordElement.find('.edit-record-btn').on('click', function() {
+                    editRecord(record.id);
+                });
+                
+                // 删除记录
+                recordElement.find('.delete-record-btn').on('click', function() {
+                    showConfirmDialog(
+                        '删除记录',
+                        `确定要删除 "${record.carInfo.brand}" 的试驾记录吗？此操作不可撤销。`,
+                        function() {
+                            deleteRecord(record.id);
+                        }
+                    );
+                });
+            });
+            
+            feather.replace();
+        }
+
+        // 计算平均评分
+        function calculateAverageRating(ratings) {
+            const values = Object.values(ratings);
+            return values.reduce((sum, val) => sum + val, 0) / values.length;
+        }
+
+        // 编辑记录
+        function editRecord(recordId) {
+            const record = carRecords.find(r => r.id === recordId);
+            if (!record) return;
+            
+            // 设置当前记录ID
+            currentRecordId = recordId;
+            
+            // 填充车辆信息
+            $('#carBrand').val(record.carInfo.brand);
+            $('#carYear').val(record.carInfo.year);
+            $('#carPrice').val(record.carInfo.price);
+            $('#carConfig').val(record.carInfo.config);
+            
+            // 填充评分
+            $('#ratingPower').val(record.ratings.power);
+            $('#ratingPowerValue').text(record.ratings.power);
+            $('#ratingHandling').val(record.ratings.handling);
+            $('#ratingHandlingValue').text(record.ratings.handling);
+            $('#ratingComfort').val(record.ratings.comfort);
+            $('#ratingComfortValue').text(record.ratings.comfort);
+            $('#ratingInterior').val(record.ratings.interior);
+            $('#ratingInteriorValue').text(record.ratings.interior);
+            $('#ratingSpace').val(record.ratings.space);
+            $('#ratingSpaceValue').text(record.ratings.space);
+            $('#ratingFuelEconomy').val(record.ratings.fuelEconomy);
+            $('#ratingFuelEconomyValue').text(record.ratings.fuelEconomy);
+            $('#ratingTechnology').val(record.ratings.technology);
+            $('#ratingTechnologyValue').text(record.ratings.technology);
+            $('#ratingValueForMoney').val(record.ratings.valueForMoney);
+            $('#ratingValueForMoneyValue').text(record.ratings.valueForMoney);
+            
+            // 填充笔记
+            $('#textNotes').val(record.notes);
+            
+            // 填充图片
+            $('#imagePreviewContainer').empty();
+            record.images.forEach(imgSrc => {
+                const imgElement = $(`
+                    <div class="relative group">
+                        <img src="${imgSrc}" class="w-full h-24 object-cover rounded-lg" />
+                        <button class="delete-image-btn absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <i data-feather="x" class="h-3 w-3"></i>
+                        </button>
+                    </div>
+                `);
+                
+                $('#imagePreviewContainer').append(imgElement);
+                
+                imgElement.find('.delete-image-btn').on('click', function() {
+                    imgElement.remove();
+                });
+            });
+            
+            // 填充录音
+            $('#audioRecordingContainer').empty();
+            recordingCount = 0;
+            record.recordings.forEach(audioSrc => {
+                recordingCount++;
+                const recordingId = `recording-${Date.now()}-${recordingCount}`;
+                
+                const audioElement = $(`
+                    <div id="${recordingId}" class="flex items-center justify-between p-2 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                        <div class="flex items-center">
+                            <i data-feather="mic" class="h-4 w-4 mr-2 text-blue-500"></i>
+                            <span class="text-sm">录音 ${recordingCount}</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <button class="play-audio-btn p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600">
+                                <i data-feather="play" class="h-4 w-4"></i>
+                            </button>
+                            <button class="delete-audio-btn p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600">
+                                <i data-feather="trash-2" class="h-4 w-4 text-red-500"></i>
+                            </button>
+                        </div>
+                        <audio class="hidden" src="${audioSrc}"></audio>
+                    </div>
+                `);
+                
+                $('#audioRecordingContainer').append(audioElement);
+                
+                audioElement.find('.play-audio-btn').on('click', function() {
+                    const audio = audioElement.find('audio')[0];
+                    if (audio.paused) {
+                        audio.play();
+                        $(this).find('i').replaceWith(feather.icons['pause'].toSvg({ class: 'h-4 w-4' }));
+                    } else {
+                        audio.pause();
+                        $(this).find('i').replaceWith(feather.icons['play'].toSvg({ class: 'h-4 w-4' }));
+                    }
+                });
+                
+                audioElement.find('.delete-audio-btn').on('click', function() {
+                    audioElement.remove();
+                });
+                
+                audioElement.find('audio').on('ended', function() {
+                    audioElement.find('.play-audio-btn i').replaceWith(feather.icons['play'].toSvg({ class: 'h-4 w-4' }));
+                });
+            });
+            
+            // 填充优缺点
+            $('#prosContainer').empty();
+            record.pros.forEach(pro => {
+                addProCon('pro', pro);
+            });
+            
+            $('#consContainer').empty();
+            record.cons.forEach(con => {
+                addProCon('con', con);
+            });
+            
+            // 切换到记录视图
+            switchView('record');
+            
+            // 滚动到顶部
+            window.scrollTo(0, 0);
+            
+            feather.replace();
+        }
+
+        // 删除记录
+        function deleteRecord(recordId) {
+            // 过滤掉要删除的记录
+            carRecords = carRecords.filter(r => r.id !== recordId);
+            
+            // 保存到本地存储
+            localStorage.setItem('carRecords', JSON.stringify(carRecords));
+            
+            // 重新渲染列表
+            renderRecordsList();
+            
+            // 更新存储信息
+            updateStorageInfo();
+            
+            // 显示成功提示
+            showToast('success', '删除成功', '试驾记录已删除');
+        }
+
+        // 过滤记录
+        function filterRecords(searchTerm) {
+            if (!searchTerm) {
+                renderRecordsList();
+                return;
+            }
+            
+            const filteredRecords = carRecords.filter(record => {
+                const brand = record.carInfo.brand.toLowerCase();
+                const year = record.carInfo.year.toLowerCase();
+                const price = record.carInfo.price.toLowerCase();
+                const config = record.carInfo.config.toLowerCase();
+                const notes = record.notes.toLowerCase();
+                
+                return brand.includes(searchTerm) || 
+                       year.includes(searchTerm) || 
+                       price.includes(searchTerm) || 
+                       config.includes(searchTerm) || 
+                       notes.includes(searchTerm);
+            });
+            
+            const container = $('#recordsList');
+            container.empty();
+            
+            if (filteredRecords.length === 0) {
+                container.html(`
+                    <div class="text-center py-10 text-gray-500 dark:text-gray-400">
+                        <i data-feather="search" class="h-12 w-12 mx-auto mb-3 opacity-50"></i>
+                        <p>未找到匹配的记录</p>
+                    </div>
+                `);
+                feather.replace();
+                return;
+            }
+            
+            // 按时间倒序排列
+            const sortedRecords = [...filteredRecords].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+            
+            sortedRecords.forEach(record => {
+                const date = new Date(record.timestamp);
+                const formattedDate = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`;
+                
+                const recordElement = $(`
+                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden transition-transform hover:shadow-md hover:-translate-y-1" data-record-id="${record.id}">
+                        <div class="p-4">
+                            <div class="flex justify-between items-start mb-2">
+                                <h3 class="font-semibold text-lg">${record.carInfo.brand}</h3>
+                                <span class="text-xs text-gray-500 dark:text-gray-400">${formattedDate}</span>
+                            </div>
+                            <div class="flex flex-wrap gap-2 mb-3">
+                                ${record.carInfo.year ? `<span class="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded-md text-xs">${record.carInfo.year}</span>` : ''}
+                                ${record.carInfo.price ? `<span class="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded-md text-xs">${record.carInfo.price}</span>` : ''}
+                                ${record.carInfo.config ? `<span class="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded-md text-xs">${record.carInfo.config}</span>` : ''}
+                            </div>
+                            <div class="flex items-center text-sm text-gray-600 dark:text-gray-400 mb-3">
+                                <div class="flex items-center mr-4">
+                                    <i data-feather="image" class="h-4 w-4 mr-1"></i>
+                                    <span>${record.images.length}</span>
+                                </div>
+                                <div class="flex items-center mr-4">
+                                    <i data-feather="mic" class="h-4 w-4 mr-1"></i>
+                                    <span>${record.recordings.length}</span>
+                                </div>
+                                <div class="flex items-center">
+                                    <i data-feather="star" class="h-4 w-4 mr-1"></i>
+                                    <span>${calculateAverageRating(record.ratings).toFixed(1)}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex border-t border-gray-200 dark:border-gray-700 divide-x divide-gray-200 dark:divide-gray-700">
+                            <button class="edit-record-btn flex-1 py-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors">
+                                <i data-feather="edit-2" class="h-4 w-4 inline-block mr-1"></i>
+                                编辑
+                            </button>
+                            <button class="delete-record-btn flex-1 py-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+                                <i data-feather="trash-2" class="h-4 w-4 inline-block mr-1"></i>
+                                删除
+                            </button>
+                        </div>
+                    </div>
+                `);
+                
+                container.append(recordElement);
+                
+                // 编辑记录
+                recordElement.find('.edit-record-btn').on('click', function() {
+                    editRecord(record.id);
+                });
+                
+                // 删除记录
+                recordElement.find('.delete-record-btn').on('click', function() {
+                    showConfirmDialog(
+                        '删除记录',
+                        `确定要删除 "${record.carInfo.brand}" 的试驾记录吗？此操作不可撤销。`,
+                        function() {
+                            deleteRecord(record.id);
+                        }
+                    );
+                });
+            });
+            
+            feather.replace();
+        }
+
+        // 填充对比选择框
+        function populateCompareSelects() {
+            const selects = $('#compareCar1, #compareCar2');
+            selects.empty();
+            
+            selects.append('<option value="">选择车辆...</option>');
+            
+            carRecords.forEach(record => {
+                const option = $(`<option value="${record.id}">${record.carInfo.brand} ${record.carInfo.year || ''}</option>`);
+                selects.append(option);
+            });
+        }
+
+        // 开始对比
+        function startCompare() {
+            const car1Id = $('#compareCar1').val();
+            const car2Id = $('#compareCar2').val();
+            
+            if (!car1Id || !car2Id) {
+                showToast('error', '对比失败', '请选择两辆车进行对比');
+                return;
+            }
+            
+            if (car1Id === car2Id) {
+                showToast('error', '对比失败', '请选择两辆不同的车进行对比');
+                return;
+            }
+            
+            const car1 = carRecords.find(r => r.id === car1Id);
+            const car2 = carRecords.find(r => r.id === car2Id);
+            
+            // 显示对比结果容器
+            $('#compareResultContainer').removeClass('hidden');
+            
+            // 填充基本信息
+            $('#car1Info').html(`<span class="text-blue-600 dark:text-blue-400">${car1.carInfo.brand}</span><br>${car1.carInfo.year || ''} ${car1.carInfo.config || ''}`);
+            $('#car2Info').html(`<span class="text-green-600 dark:text-green-400">${car2.carInfo.brand}</span><br>${car2.carInfo.year || ''} ${car2.carInfo.config || ''}`);
+            
+            // 渲染雷达图
+            renderRadarChart(car1, car2);
+            
+            // 填充优点
+            $('#car1Pros').empty();
+            car1.pros.forEach(pro => {
+                $('#car1Pros').append(`<div class="flex items-center text-sm"><i data-feather="check" class="h-4 w-4 mr-2 text-blue-500"></i>${pro}</div>`);
+            });
+            
+            $('#car2Pros').empty();
+            car2.pros.forEach(pro => {
+                $('#car2Pros').append(`<div class="flex items-center text-sm"><i data-feather="check" class="h-4 w-4 mr-2 text-green-500"></i>${pro}</div>`);
+            });
+            
+            // 填充缺点
+            $('#car1Cons').empty();
+            car1.cons.forEach(con => {
+                $('#car1Cons').append(`<div class="flex items-center text-sm"><i data-feather="x" class="h-4 w-4 mr-2 text-red-500"></i>${con}</div>`);
+            });
+            
+            $('#car2Cons').empty();
+            car2.cons.forEach(con => {
+                $('#car2Cons').append(`<div class="flex items-center text-sm"><i data-feather="x" class="h-4 w-4 mr-2 text-red-500"></i>${con}</div>`);
+            });
+            
+            // 填充笔记
+            $('#car1NotesTitle').text(car1.carInfo.brand);
+            $('#car1Notes').text(car1.notes || '无笔记');
+            
+            $('#car2NotesTitle').text(car2.carInfo.brand);
+            $('#car2Notes').text(car2.notes || '无笔记');
+            
+            feather.replace();
+            
+            // 滚动到对比结果
+            $('#compareResultContainer')[0].scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // 渲染雷达图
+        function renderRadarChart(car1, car2) {
+            const ctx = document.getElementById('radarChart').getContext('2d');
+            
+            // 如果已存在图表，先销毁
+            if (radarChart) {
+                radarChart.destroy();
+            }
+            
+            const labels = [
+                '动力表现',
+                '操控感受',
+                '舒适性',
+                '内饰质感',
+                '空间表现',
+                '油耗表现',
+                '科技配置',
+                '性价比'
+            ];
+            
+            const car1Data = [
+                car1.ratings.power,
+                car1.ratings.handling,
+                car1.ratings.comfort,
+                car1.ratings.interior,
+                car1.ratings.space,
+                car1.ratings.fuelEconomy,
+                car1.ratings.technology,
+                car1.ratings.valueForMoney
+            ];
+            
+            const car2Data = [
+                car2.ratings.power,
+                car2.ratings.handling,
+                car2.ratings.comfort,
+                car2.ratings.interior,
+                car2.ratings.space,
+                car2.ratings.fuelEconomy,
+                car2.ratings.technology,
+                car2.ratings.valueForMoney
+            ];
+            
+            radarChart = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: car1.carInfo.brand,
+                            data: car1Data,
+                            backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                            borderColor: 'rgba(59, 130, 246, 1)',
+                            pointBackgroundColor: 'rgba(59, 130, 246, 1)',
+                            pointBorderColor: '#fff',
+                            pointHoverBackgroundColor: '#fff',
+                            pointHoverBorderColor: 'rgba(59, 130, 246, 1)'
+                        },
+                        {
+                            label: car2.carInfo.brand,
+                            data: car2Data,
+                            backgroundColor: 'rgba(16, 185, 129, 0.2)',
+                            borderColor: 'rgba(16, 185, 129, 1)',
+                            pointBackgroundColor: 'rgba(16, 185, 129, 1)',
+                            pointBorderColor: '#fff',
+                            pointHoverBackgroundColor: '#fff',
+                            pointHoverBorderColor: 'rgba(16, 185, 129, 1)'
+                        }
+                    ]
+                },
+                options: {
+                    scales: {
+                        r: {
+                            angleLines: {
+                                display: true
+                            },
+                            suggestedMin: 0,
+                            suggestedMax: 10,
+                            ticks: {
+                                stepSize: 2
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                font: {
+                                    size: 12
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 导出数据
+        function exportData() {
+            if (carRecords.length === 0) {
+                showToast('error', '导出失败', '没有可导出的记录');
+                return;
+            }
+            
+            // 创建导出数据
+            const exportData = {
+                exportDate: new Date().toISOString(),
+                records: carRecords
+            };
+            
+            // 转换为JSON字符串
+            const jsonString = JSON.stringify(exportData, null, 2);
+            
+            // 创建Blob对象
+            const blob = new Blob([jsonString], { type: 'application/json' });
+            
+            // 创建下载链接
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `试驾数据_${new Date().toISOString().slice(0, 10)}.json`;
+            
+            // 触发下载
+            document.body.appendChild(a);
+            a.click();
+            
+            // 清理
+            setTimeout(() => {
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }, 0);
+            
+            showToast('success', '导出成功', '试驾数据已导出为JSON文件');
+        }
+
+        // 更新存储信息
+        function updateStorageInfo() {
+            // 更新记录数量
+            $('#recordCount').text(carRecords.length);
+            
+            // 计算存储使用情况
+            const storageUsed = calculateStorageUsage();
+            const storageLimit = 5; // 假设限制为5MB
+            
+            $('#storageUsage').text(storageUsed.toFixed(2));
+            $('#storageLimit').text(storageLimit);
+        }
+
+        // 计算存储使用情况
+        function calculateStorageUsage() {
+            const records = JSON.stringify(carRecords);
+            return (records.length * 2) / (1024 * 1024); // 转换为MB
+        }
+
+        // 显示提示框
+        function showToast(type, title, message) {
+            const toast = $('#toast');
+            const toastIcon = $('#toastIcon');
+            const toastTitle = $('#toastTitle');
+            const toastMessage = $('#toastMessage');
+            
+            // 设置图标
+            toastIcon.empty();
+            if (type === 'success') {
+                toastIcon.html(feather.icons['check-circle'].toSvg({ class: 'text-green-500' }));
+            } else if (type === 'error') {
+                toastIcon.html(feather.icons['alert-circle'].toSvg({ class: 'text-red-500' }));
+            } else if (type === 'info') {
+                toastIcon.html(feather.icons['info'].toSvg({ class: 'text-blue-500' }));
+            }
+            
+            // 设置标题和消息
+            toastTitle.text(title);
+            toastMessage.text(message);
+            
+            // 显示提示框
+            toast.removeClass('translate-x-full opacity-0').addClass('translate-x-0 opacity-100');
+            
+            // 3秒后隐藏
+            setTimeout(() => {
+                toast.removeClass('translate-x-0 opacity-100').addClass('translate-x-full opacity-0');
+            }, 3000);
+        }
+
+        // 显示确认对话框
+        function showConfirmDialog(title, message, onConfirm) {
+            const dialog = $('#confirmDialog');
+            const confirmTitle = $('#confirmTitle');
+            const confirmMessage = $('#confirmMessage');
+            const confirmOkBtn = $('#confirmOkBtn');
+            const confirmCancelBtn = $('#confirmCancelBtn');
+            
+            // 设置标题和消息
+            confirmTitle.text(title);
+            confirmMessage.text(message);
+            
+            // 显示对话框
+            dialog.removeClass('hidden');
+            
+            // 确认按钮事件
+            confirmOkBtn.off('click').on('click', function() {
+                onConfirm();
+                dialog.addClass('hidden');
+            });
+            
+            // 取消按钮事件
+            confirmCancelBtn.off('click').on('click', function() {
+                dialog.addClass('hidden');
+            });
+        }
+
+        // 注册Service Worker
+        function registerServiceWorker() {
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(registration => {
+                        console.log('Service Worker 注册成功:', registration);
+                    })
+                    .catch(error => {
+                        console.log('Service Worker 注册失败:', error);
+                    });
+            }
+        }
+    </script>
+</body>
+</html>

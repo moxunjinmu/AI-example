@@ -1,0 +1,1934 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>紧凑级车试驾数据收集工具</title>
+    <meta name="description" content="专业的紧凑级车试驾数据收集和对比工具" />
+    <meta name="theme-color" content="#2196f3" />
+    <link rel="manifest" href="manifest.json" />
+    <link rel="apple-touch-icon" href="icons/icon-192x192.png" />
+    <style>
+      :root {
+        --primary-color: #2196f3;
+        --secondary-color: #03a9f4;
+        --accent-color: #ff9800;
+        --text-color: #333333;
+        --background-color: #f5f5f5;
+        --card-color: #ffffff;
+        --border-color: #e0e0e0;
+      }
+
+      [data-theme="dark"] {
+        --primary-color: #1976d2;
+        --secondary-color: #0288d1;
+        --accent-color: #ffb74d;
+        --text-color: #f5f5f5;
+        --background-color: #121212;
+        --card-color: #1e1e1e;
+        --border-color: #333333;
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+      }
+
+      body {
+        background-color: var(--background-color);
+        color: var(--text-color);
+        line-height: 1.6;
+        transition: all 0.3s ease;
+        padding-bottom: 70px;
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 15px;
+      }
+
+      header {
+        background-color: var(--primary-color);
+        color: white;
+        padding: 15px 0;
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+
+      .header-content {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .logo h1 {
+        font-size: 1.5rem;
+        font-weight: 600;
+      }
+
+      .nav-buttons button {
+        background-color: rgba(255, 255, 255, 0.2);
+        border: none;
+        padding: 8px 12px;
+        border-radius: 4px;
+        color: white;
+        font-size: 0.9rem;
+        cursor: pointer;
+        margin-left: 8px;
+        transition: background-color 0.3s;
+      }
+
+      .nav-buttons button:hover {
+        background-color: rgba(255, 255, 255, 0.3);
+      }
+
+      main {
+        padding: 20px 0;
+      }
+
+      .card {
+        background-color: var(--card-color);
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        margin-bottom: 20px;
+        padding: 20px;
+      }
+
+      .card-title {
+        font-size: 1.2rem;
+        font-weight: 600;
+        margin-bottom: 15px;
+        color: var(--primary-color);
+        border-bottom: 1px solid var(--border-color);
+        padding-bottom: 10px;
+      }
+
+      .form-group {
+        margin-bottom: 15px;
+      }
+
+      label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: 500;
+      }
+
+      input[type="text"],
+      input[type="number"],
+      input[type="date"],
+      select,
+      textarea {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+        background-color: var(--background-color);
+        color: var(--text-color);
+        font-size: 1rem;
+      }
+
+      textarea {
+        min-height: 100px;
+        resize: vertical;
+      }
+
+      .rating-container {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .rating-slider {
+        flex-grow: 1;
+        height: 10px;
+        -webkit-appearance: none;
+        appearance: none;
+        background: linear-gradient(to right, #ff5252, #ffeb3b, #4caf50);
+        border-radius: 5px;
+      }
+
+      .rating-slider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: var(--primary-color);
+        cursor: pointer;
+      }
+
+      .rating-value {
+        width: 30px;
+        text-align: center;
+        font-weight: bold;
+      }
+
+      .media-buttons {
+        display: flex;
+        gap: 10px;
+        margin-top: 10px;
+      }
+
+      .media-button {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 8px 15px;
+        background-color: var(--secondary-color);
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.9rem;
+        transition: background-color 0.3s;
+      }
+
+      .media-button:hover {
+        background-color: var(--primary-color);
+      }
+
+      .media-button i {
+        margin-right: 5px;
+      }
+
+      .media-preview {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 10px;
+      }
+
+      .media-item {
+        width: 100px;
+        height: 100px;
+        border-radius: 4px;
+        overflow: hidden;
+        position: relative;
+      }
+
+      .media-item img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      .media-item .delete-btn {
+        position: absolute;
+        top: 5px;
+        right: 5px;
+        background-color: rgba(244, 67, 54, 0.7);
+        color: white;
+        border: none;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .action-buttons {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        margin-top: 20px;
+      }
+
+      .action-button {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 4px;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: background-color 0.3s;
+      }
+
+      .primary-button {
+        background-color: var(--primary-color);
+        color: white;
+      }
+
+      .primary-button:hover {
+        background-color: var(--secondary-color);
+      }
+
+      .secondary-button {
+        background-color: var(--border-color);
+        color: var(--text-color);
+      }
+
+      .secondary-button:hover {
+        background-color: #d5d5d5;
+      }
+
+      .tab-container {
+        display: flex;
+        border-bottom: 1px solid var(--border-color);
+        margin-bottom: 20px;
+      }
+
+      .tab {
+        padding: 10px 20px;
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+        transition: all 0.3s;
+      }
+
+      .tab.active {
+        border-bottom-color: var(--primary-color);
+        color: var(--primary-color);
+        font-weight: 500;
+      }
+
+      .tab-content {
+        display: none;
+      }
+
+      .tab-content.active {
+        display: block;
+      }
+
+      .advantage-disadvantage {
+        display: flex;
+        gap: 15px;
+        margin-top: 10px;
+      }
+
+      .advantage-container,
+      .disadvantage-container {
+        flex: 1;
+      }
+
+      .tag-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 8px;
+      }
+
+      .tag {
+        padding: 5px 10px;
+        border-radius: 15px;
+        font-size: 0.9rem;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+      }
+
+      .advantage-tag {
+        background-color: rgba(76, 175, 80, 0.1);
+        color: #4caf50;
+        border: 1px solid #4caf50;
+      }
+
+      .disadvantage-tag {
+        background-color: rgba(244, 67, 54, 0.1);
+        color: #f44336;
+        border: 1px solid #f44336;
+      }
+
+      .tag .delete-tag {
+        cursor: pointer;
+        font-size: 0.8rem;
+      }
+
+      .add-tag-input {
+        display: flex;
+        gap: 5px;
+        margin-top: 8px;
+      }
+
+      .add-tag-input input {
+        flex-grow: 1;
+        padding: 8px;
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+        font-size: 0.9rem;
+      }
+
+      .add-tag-input button {
+        padding: 8px 12px;
+        background-color: var(--primary-color);
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: background-color 0.3s;
+      }
+
+      .add-tag-input button:hover {
+        background-color: var(--secondary-color);
+      }
+
+      .footer-nav {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background-color: var(--card-color);
+        box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1);
+        display: flex;
+        justify-content: space-around;
+        padding: 10px 0;
+        z-index: 1000;
+      }
+
+      .nav-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        color: var(--text-color);
+        text-decoration: none;
+        font-size: 0.8rem;
+      }
+
+      .nav-item i {
+        font-size: 1.5rem;
+        margin-bottom: 3px;
+      }
+
+      .nav-item.active {
+        color: var(--primary-color);
+      }
+
+      /* Car comparison styles */
+      .comparison-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+        overflow-x: auto;
+      }
+
+      .comparison-table th,
+      .comparison-table td {
+        padding: 10px;
+        border: 1px solid var(--border-color);
+        text-align: left;
+      }
+
+      .comparison-table th {
+        background-color: var(--secondary-color);
+        color: white;
+        font-weight: 500;
+      }
+
+      .comparison-table tr:nth-child(even) {
+        background-color: rgba(0, 0, 0, 0.03);
+      }
+
+      .car-select-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 20px;
+      }
+
+      .car-select-item {
+        padding: 8px 15px;
+        background-color: var(--card-color);
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.3s;
+      }
+
+      .car-select-item.selected {
+        background-color: var(--primary-color);
+        color: white;
+        border-color: var(--primary-color);
+      }
+
+      /* Radar chart container */
+      .radar-chart-container {
+        width: 100%;
+        height: 400px;
+        margin-top: 20px;
+      }
+
+      /* Modal styles */
+      .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 2000;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+      }
+
+      .modal-content {
+        background-color: var(--card-color);
+        border-radius: 8px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        width: 100%;
+        max-width: 500px;
+        max-height: 90vh;
+        overflow-y: auto;
+        padding: 20px;
+      }
+
+      .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid var(--border-color);
+      }
+
+      .modal-title {
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: var(--primary-color);
+      }
+
+      .modal-close {
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        cursor: pointer;
+        color: var(--text-color);
+      }
+
+      .modal-body {
+        margin-bottom: 20px;
+      }
+
+      .modal-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        padding-top: 10px;
+        border-top: 1px solid var(--border-color);
+      }
+
+      /* Responsive adjustments */
+      @media (max-width: 768px) {
+        .advantage-disadvantage {
+          flex-direction: column;
+        }
+
+        .header-content .logo h1 {
+          font-size: 1.2rem;
+        }
+
+        .nav-buttons button {
+          padding: 6px 10px;
+          font-size: 0.8rem;
+        }
+      }
+
+      @media (max-width: 480px) {
+        .card {
+          padding: 15px;
+        }
+
+        .card-title {
+          font-size: 1.1rem;
+        }
+
+        .action-button {
+          padding: 8px 15px;
+          font-size: 0.9rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="container header-content">
+        <div class="logo">
+          <h1>紧凑级车试驾数据收集</h1>
+        </div>
+        <div class="nav-buttons">
+          <button id="toggleTheme">切换主题</button>
+          <button id="exportData">导出数据</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="container">
+      <div id="homeView" class="view active">
+        <div class="card">
+          <div class="card-title">我的试驾记录</div>
+          <div id="carList" class="car-list">
+            <!-- 车辆列表将通过JS动态生成 -->
+          </div>
+          <div class="action-buttons">
+            <button class="action-button primary-button" id="addNewCarBtn">
+              添加新车型
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div id="recordView" class="view" style="display: none">
+        <div class="card">
+          <div class="card-title">车辆基本信息</div>
+          <form id="carInfoForm">
+            <div class="form-group">
+              <label for="carBrand">品牌</label>
+              <input type="text" id="carBrand" name="carBrand" required />
+            </div>
+            <div class="form-group">
+              <label for="carModel">车型</label>
+              <input type="text" id="carModel" name="carModel" required />
+            </div>
+            <div class="form-group">
+              <label for="carTrim">配置版本</label>
+              <input type="text" id="carTrim" name="carTrim" />
+            </div>
+            <div class="form-group">
+              <label for="msrp">官方指导价(万元)</label>
+              <input type="number" id="msrp" name="msrp" step="0.01" />
+            </div>
+            <div class="form-group">
+              <label for="dealerPrice">实际报价(万元)</label>
+              <input
+                type="number"
+                id="dealerPrice"
+                name="dealerPrice"
+                step="0.01"
+              />
+            </div>
+            <div class="form-group">
+              <label for="testDriveDate">试驾日期</label>
+              <input type="date" id="testDriveDate" name="testDriveDate" />
+            </div>
+            <div class="form-group">
+              <label for="testDriveLocation">试驾地点</label>
+              <input
+                type="text"
+                id="testDriveLocation"
+                name="testDriveLocation"
+              />
+            </div>
+            <div class="form-group">
+              <label for="salesContact">销售顾问联系方式</label>
+              <input type="text" id="salesContact" name="salesContact" />
+            </div>
+          </form>
+        </div>
+
+        <div class="card">
+          <div class="card-title">评测数据</div>
+          <div class="tab-container">
+            <div class="tab active" data-tab="exterior">外观</div>
+            <div class="tab" data-tab="interior">内饰</div>
+            <div class="tab" data-tab="space">空间</div>
+            <div class="tab" data-tab="driving">驾驶体验</div>
+            <div class="tab" data-tab="nvh">噪音控制</div>
+            <div class="tab" data-tab="smart">智能系统</div>
+          </div>
+
+          <div id="exteriorTab" class="tab-content active">
+            <div class="form-group">
+              <label>整体设计感</label>
+              <div class="rating-container">
+                <input
+                  type="range"
+                  class="rating-slider"
+                  min="1"
+                  max="10"
+                  value="5"
+                  id="exteriorDesign"
+                />
+                <span class="rating-value" id="exteriorDesignValue">5</span>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>做工质量</label>
+              <div class="rating-container">
+                <input
+                  type="range"
+                  class="rating-slider"
+                  min="1"
+                  max="10"
+                  value="5"
+                  id="exteriorQuality"
+                />
+                <span class="rating-value" id="exteriorQualityValue">5</span>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>外观备注</label>
+              <textarea id="exteriorNotes"></textarea>
+            </div>
+            <div class="media-buttons">
+              <button class="media-button take-photo">
+                <i>📷</i> 拍照记录
+              </button>
+              <button
+                class="media-button voice-note"
+                data-target="exteriorNotes"
+              >
+                <i>🎤</i> 语音记录
+              </button>
+            </div>
+            <div class="media-preview" id="exteriorPhotos"></div>
+          </div>
+
+          <!-- 其他选项卡内容类似结构，略去详细实现 -->
+        </div>
+
+        <div class="card">
+          <div class="card-title">优缺点记录</div>
+          <div class="advantage-disadvantage">
+            <div class="advantage-container">
+              <label>优点</label>
+              <div class="tag-container" id="advantageTags"></div>
+              <div class="add-tag-input">
+                <input type="text" id="advantageInput" placeholder="添加优点" />
+                <button id="addAdvantageBtn">添加</button>
+              </div>
+            </div>
+            <div class="disadvantage-container">
+              <label>缺点</label>
+              <div class="tag-container" id="disadvantageTags"></div>
+              <div class="add-tag-input">
+                <input
+                  type="text"
+                  id="disadvantageInput"
+                  placeholder="添加缺点"
+                />
+                <button id="addDisadvantageBtn">添加</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">综合评价</div>
+          <div class="form-group">
+            <label>总体评分</label>
+            <div class="rating-container">
+              <input
+                type="range"
+                class="rating-slider"
+                min="1"
+                max="10"
+                value="5"
+                id="overallRating"
+              />
+              <span class="rating-value" id="overallRatingValue">5</span>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>个人感受与评价</label>
+            <textarea id="overallComments"></textarea>
+          </div>
+          <div class="media-buttons">
+            <button
+              class="media-button voice-note"
+              data-target="overallComments"
+            >
+              <i>🎤</i> 语音记录
+            </button>
+          </div>
+          <div class="action-buttons">
+            <button class="action-button secondary-button" id="cancelRecordBtn">
+              取消
+            </button>
+            <button class="action-button primary-button" id="saveRecordBtn">
+              保存记录
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div id="compareView" class="view" style="display: none">
+        <div class="card">
+          <div class="card-title">车型对比</div>
+          <label>选择要对比的车型(最多3个)</label>
+          <div class="car-select-container" id="compareCarSelect">
+            <!-- 车辆选择将通过JS动态生成 -->
+          </div>
+          <div id="comparisonTable" class="comparison-table-container">
+            <!-- 对比表格将通过JS动态生成 -->
+          </div>
+          <div id="radarChartContainer" class="radar-chart-container">
+            <!-- 雷达图将通过JS动态生成 -->
+          </div>
+          <div class="action-buttons">
+            <button
+              class="action-button primary-button"
+              id="exportComparisonBtn"
+            >
+              导出对比报告
+            </button>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- 底部导航 -->
+    <div class="footer-nav">
+      <a href="#" class="nav-item active" data-view="homeView">
+        <i>🏠</i>
+        <span>首页</span>
+      </a>
+      <a href="#" class="nav-item" data-view="compareView">
+        <i>📊</i>
+        <span>对比</span>
+      </a>
+      <a href="#" class="nav-item" id="addCarNav">
+        <i>➕</i>
+        <span>添加车型</span>
+      </a>
+    </div>
+
+    <!-- 语音识别模态框 -->
+    <div class="modal" id="voiceModal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 class="modal-title">语音识别</h3>
+          <button class="modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div id="voiceStatus">点击开始录音按钮开始</div>
+          <div
+            id="voiceResult"
+            style="
+              margin-top: 15px;
+              min-height: 100px;
+              border: 1px solid var(--border-color);
+              padding: 10px;
+              border-radius: 4px;
+            "
+          ></div>
+        </div>
+        <div class="modal-footer">
+          <button class="action-button primary-button" id="startVoiceBtn">
+            开始录音
+          </button>
+          <button class="action-button secondary-button" id="cancelVoiceBtn">
+            取消
+          </button>
+          <button class="action-button primary-button" id="confirmVoiceBtn">
+            确认
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 拍照模态框 -->
+    <div class="modal" id="photoModal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 class="modal-title">拍照记录</h3>
+          <button class="modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+          <video
+            id="cameraPreview"
+            style="width: 100%; max-height: 300px; background: #000"
+            autoplay
+          ></video>
+          <canvas id="photoCanvas" style="display: none"></canvas>
+          <div id="capturedPhoto" style="margin-top: 15px; display: none">
+            <img id="photoResult" style="width: 100%; border-radius: 4px" />
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="action-button primary-button" id="capturePhotoBtn">
+            拍照
+          </button>
+          <button
+            class="action-button secondary-button"
+            id="retakePhotoBtn"
+            style="display: none"
+          >
+            重拍
+          </button>
+          <button class="action-button secondary-button" id="cancelPhotoBtn">
+            取消
+          </button>
+          <button
+            class="action-button primary-button"
+            id="confirmPhotoBtn"
+            style="display: none"
+          >
+            确认
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // 当前车辆数据
+      let currentCarData = {
+        id: null,
+        basic: {},
+        ratings: {
+          exterior: {},
+          interior: {},
+          space: {},
+          driving: {},
+          nvh: {},
+          smart: {},
+        },
+        advantages: [],
+        disadvantages: [],
+        overall: {},
+        photos: [],
+      };
+
+      // 所有车辆数据
+      let allCarsData = [];
+
+      // 当前选择的文本输入区域（用于语音识别）
+      let currentVoiceTarget = null;
+
+      // DOM加载完成后执行
+      document.addEventListener("DOMContentLoaded", function () {
+        // 初始化数据
+        loadData();
+        renderCarList();
+
+        // 设置事件监听器
+        setupEventListeners();
+        setupRatingSliders();
+        setupTabSwitching();
+      });
+
+      // 加载本地存储的数据
+      function loadData() {
+        const savedData = localStorage.getItem("carTestDriveData");
+        if (savedData) {
+          try {
+            allCarsData = JSON.parse(savedData);
+          } catch (e) {
+            console.error("Error parsing saved data:", e);
+            allCarsData = [];
+          }
+        }
+      }
+
+      // 保存数据到本地存储
+      function saveData() {
+        localStorage.setItem("carTestDriveData", JSON.stringify(allCarsData));
+      }
+
+      // 渲染车辆列表
+      function renderCarList() {
+        const carListElement = document.getElementById("carList");
+        carListElement.innerHTML = "";
+
+        if (allCarsData.length === 0) {
+          carListElement.innerHTML =
+            "<p>暂无试驾记录，点击添加新车型开始记录。</p>";
+          return;
+        }
+
+        allCarsData.forEach((car) => {
+          const carItem = document.createElement("div");
+          carItem.className = "car-item";
+          carItem.innerHTML = `
+                    <div style="padding: 15px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <h3 style="margin-bottom: 5px;">${
+                              car.basic.carBrand || ""
+                            } ${car.basic.carModel || ""} ${
+            car.basic.carTrim || ""
+          }</h3>
+                            <p style="color: #666; font-size: 0.9rem; margin: 0;">
+                                ${
+                                  car.basic.testDriveDate
+                                    ? `试驾日期: ${car.basic.testDriveDate}`
+                                    : ""
+                                }
+                                ${
+                                  car.overall.overallRating
+                                    ? ` | 总评分: ${car.overall.overallRating}/10`
+                                    : ""
+                                }
+                            </p>
+                        </div>
+                        <div>
+                            <button class="action-button secondary-button edit-car-btn" data-id="${
+                              car.id
+                            }" style="margin-right: 5px;">编辑</button>
+                            <button class="action-button secondary-button delete-car-btn" data-id="${
+                              car.id
+                            }">删除</button>
+                        </div>
+                    </div>
+                `;
+          carListElement.appendChild(carItem);
+        });
+
+        // 为按钮添加事件监听
+        document.querySelectorAll(".edit-car-btn").forEach((btn) => {
+          btn.addEventListener("click", function () {
+            const carId = this.getAttribute("data-id");
+            editCar(carId);
+          });
+        });
+
+        document.querySelectorAll(".delete-car-btn").forEach((btn) => {
+          btn.addEventListener("click", function () {
+            const carId = this.getAttribute("data-id");
+            deleteCar(carId);
+          });
+        });
+      }
+
+      // 设置评分滑块事件
+      function setupRatingSliders() {
+        const sliders = document.querySelectorAll(".rating-slider");
+        sliders.forEach((slider) => {
+          const valueDisplay = document.getElementById(slider.id + "Value");
+          slider.addEventListener("input", function () {
+            valueDisplay.textContent = this.value;
+          });
+        });
+      }
+
+      // 设置标签页切换
+      function setupTabSwitching() {
+        const tabs = document.querySelectorAll(".tab");
+        tabs.forEach((tab) => {
+          tab.addEventListener("click", function () {
+            const tabName = this.getAttribute("data-tab");
+
+            // 更新tab样式
+            document
+              .querySelectorAll(".tab")
+              .forEach((t) => t.classList.remove("active"));
+            this.classList.add("active");
+
+            // 显示对应的内容
+            document
+              .querySelectorAll(".tab-content")
+              .forEach((content) => content.classList.remove("active"));
+            document.getElementById(tabName + "Tab").classList.add("active");
+          });
+        });
+      }
+
+      // 设置事件监听器
+      function setupEventListeners() {
+        // 顶部导航按钮
+        document
+          .getElementById("toggleTheme")
+          .addEventListener("click", toggleTheme);
+        document
+          .getElementById("exportData")
+          .addEventListener("click", exportAllData);
+
+        // 底部导航
+        document.querySelectorAll(".footer-nav .nav-item").forEach((item) => {
+          item.addEventListener("click", function (e) {
+            e.preventDefault();
+            const viewId = this.getAttribute("data-view");
+            switchView(viewId);
+
+            // 更新导航状态
+            document
+              .querySelectorAll(".footer-nav .nav-item")
+              .forEach((navItem) => {
+                navItem.classList.remove("active");
+              });
+            this.classList.add("active");
+          });
+        });
+
+        // 添加新车型按钮
+        document
+          .getElementById("addNewCarBtn")
+          .addEventListener("click", () => {
+            resetCarForm();
+            switchView("recordView");
+          });
+
+        document.getElementById("addCarNav").addEventListener("click", (e) => {
+          e.preventDefault();
+          resetCarForm();
+          switchView("recordView");
+
+          // 更新导航状态
+          document
+            .querySelectorAll(".footer-nav .nav-item")
+            .forEach((navItem) => {
+              navItem.classList.remove("active");
+            });
+        });
+
+        // 记录表单按钮
+        document
+          .getElementById("saveRecordBtn")
+          .addEventListener("click", saveCarRecord);
+        document
+          .getElementById("cancelRecordBtn")
+          .addEventListener("click", () => {
+            switchView("homeView");
+            document
+              .querySelector('.nav-item[data-view="homeView"]')
+              .classList.add("active");
+          });
+
+        // 优缺点标签添加
+        document
+          .getElementById("addAdvantageBtn")
+          .addEventListener("click", () => {
+            addTag("advantage");
+          });
+
+        document
+          .getElementById("addDisadvantageBtn")
+          .addEventListener("click", () => {
+            addTag("disadvantage");
+          });
+
+        // 拍照按钮
+        document.querySelectorAll(".take-photo").forEach((btn) => {
+          btn.addEventListener("click", openCameraModal);
+        });
+
+        // 语音录入按钮
+        document.querySelectorAll(".voice-note").forEach((btn) => {
+          btn.addEventListener("click", function () {
+            currentVoiceTarget = this.getAttribute("data-target");
+            openVoiceModal();
+          });
+        });
+
+        // 模态框关闭按钮
+        document.querySelectorAll(".modal-close").forEach((btn) => {
+          btn.addEventListener("click", function () {
+            const modal = this.closest(".modal");
+            closeModal(modal.id);
+          });
+        });
+
+        // 语音识别模态框按钮
+        document
+          .getElementById("startVoiceBtn")
+          .addEventListener("click", startVoiceRecognition);
+        document
+          .getElementById("cancelVoiceBtn")
+          .addEventListener("click", () => {
+            closeModal("voiceModal");
+          });
+        document
+          .getElementById("confirmVoiceBtn")
+          .addEventListener("click", confirmVoiceInput);
+
+        // 拍照模态框按钮
+        document
+          .getElementById("capturePhotoBtn")
+          .addEventListener("click", capturePhoto);
+        document
+          .getElementById("retakePhotoBtn")
+          .addEventListener("click", retakePhoto);
+        document
+          .getElementById("cancelPhotoBtn")
+          .addEventListener("click", () => {
+            closeCamera();
+            closeModal("photoModal");
+          });
+        document
+          .getElementById("confirmPhotoBtn")
+          .addEventListener("click", confirmPhoto);
+
+        // 对比报告导出按钮
+        document
+          .getElementById("exportComparisonBtn")
+          .addEventListener("click", exportComparisonReport);
+      }
+
+      // 切换视图
+      function switchView(viewId) {
+        document.querySelectorAll(".view").forEach((view) => {
+          view.style.display = "none";
+        });
+        document.getElementById(viewId).style.display = "block";
+
+        // 如果切换到对比视图，初始化对比数据
+        if (viewId === "compareView") {
+          initCompareView();
+        }
+      }
+
+      // 切换主题
+      function toggleTheme() {
+        const isDark = document.body.getAttribute("data-theme") === "dark";
+        if (isDark) {
+          document.body.removeAttribute("data-theme");
+        } else {
+          document.body.setAttribute("data-theme", "dark");
+        }
+        localStorage.setItem("theme", isDark ? "light" : "dark");
+      }
+
+      // 重置车辆表单
+      function resetCarForm() {
+        currentCarData = {
+          id: Date.now().toString(),
+          basic: {},
+          ratings: {
+            exterior: {},
+            interior: {},
+            space: {},
+            driving: {},
+            nvh: {},
+            smart: {},
+          },
+          advantages: [],
+          disadvantages: [],
+          overall: {},
+          photos: [],
+        };
+
+        // 重置表单元素
+        document.getElementById("carInfoForm").reset();
+        document.querySelectorAll(".rating-slider").forEach((slider) => {
+          slider.value = 5;
+          const valueDisplay = document.getElementById(slider.id + "Value");
+          if (valueDisplay) valueDisplay.textContent = "5";
+        });
+
+        document.querySelectorAll("textarea").forEach((textarea) => {
+          textarea.value = "";
+        });
+
+        document.getElementById("advantageTags").innerHTML = "";
+        document.getElementById("disadvantageTags").innerHTML = "";
+
+        // 重置媒体预览
+        document.querySelectorAll(".media-preview").forEach((preview) => {
+          preview.innerHTML = "";
+        });
+      }
+
+      // 编辑车辆
+      function editCar(carId) {
+        const car = allCarsData.find((car) => car.id === carId);
+        if (!car) return;
+
+        currentCarData = JSON.parse(JSON.stringify(car)); // 深拷贝
+
+        // 填充表单
+        // 基本信息
+        for (const key in car.basic) {
+          const input = document.getElementById(key);
+          if (input) input.value = car.basic[key] || "";
+        }
+
+        // 评分
+        for (const category in car.ratings) {
+          for (const key in car.ratings[category]) {
+            const slider = document.getElementById(key);
+            const valueDisplay = document.getElementById(key + "Value");
+            if (slider) {
+              slider.value = car.ratings[category][key] || 5;
+              if (valueDisplay) valueDisplay.textContent = slider.value;
+            }
+
+            // 填充备注
+            const notes = document.getElementById(category + "Notes");
+            if (notes && car.ratings[category][category + "Notes"]) {
+              notes.value = car.ratings[category][category + "Notes"];
+            }
+          }
+        }
+
+        // 优缺点
+        renderTags("advantage", car.advantages);
+        renderTags("disadvantage", car.disadvantages);
+
+        // 综合评价
+        if (car.overall) {
+          const overallRating = document.getElementById("overallRating");
+          const overallRatingValue =
+            document.getElementById("overallRatingValue");
+          const overallComments = document.getElementById("overallComments");
+
+          if (overallRating)
+            overallRating.value = car.overall.overallRating || 5;
+          if (overallRatingValue)
+            overallRatingValue.textContent = car.overall.overallRating || 5;
+          if (overallComments)
+            overallComments.value = car.overall.overallComments || "";
+        }
+
+        // 照片
+        if (car.photos && car.photos.length) {
+          car.photos.forEach((photo) => {
+            if (photo.category) {
+              const container = document.getElementById(
+                photo.category + "Photos"
+              );
+              if (container) {
+                addPhotoToPreview(container, photo.dataUrl);
+              }
+            }
+          });
+        }
+
+        // 切换到记录视图
+        switchView("recordView");
+      }
+
+      // 删除车辆
+      function deleteCar(carId) {
+        if (confirm("确定要删除这条记录吗？此操作不可恢复。")) {
+          allCarsData = allCarsData.filter((car) => car.id !== carId);
+          saveData();
+          renderCarList();
+        }
+      }
+
+      // 添加标签
+      function addTag(type) {
+        const inputElement = document.getElementById(type + "Input");
+        const text = inputElement.value.trim();
+
+        if (text) {
+          const tags =
+            type === "advantage"
+              ? currentCarData.advantages
+              : currentCarData.disadvantages;
+
+          // 检查是否已存在相同标签
+          if (!tags.includes(text)) {
+            tags.push(text);
+            renderTags(type, tags);
+            inputElement.value = "";
+          }
+        }
+      }
+
+      // 渲染标签
+      function renderTags(type, tags) {
+        const container = document.getElementById(type + "Tags");
+        container.innerHTML = "";
+
+        tags.forEach((tag, index) => {
+          const tagElement = document.createElement("div");
+          tagElement.className = `tag ${type}-tag`;
+          tagElement.innerHTML = `
+                    <span>${tag}</span>
+                    <span class="delete-tag" data-index="${index}">×</span>
+                `;
+          container.appendChild(tagElement);
+        });
+
+        // 添加删除标签事件
+        container.querySelectorAll(".delete-tag").forEach((btn) => {
+          btn.addEventListener("click", function () {
+            const index = parseInt(this.getAttribute("data-index"));
+            if (type === "advantage") {
+              currentCarData.advantages.splice(index, 1);
+              renderTags("advantage", currentCarData.advantages);
+            } else {
+              currentCarData.disadvantages.splice(index, 1);
+              renderTags("disadvantage", currentCarData.disadvantages);
+            }
+          });
+        });
+      }
+
+      // 保存车辆记录
+      function saveCarRecord() {
+        // 收集基本信息
+        const formElements = document.getElementById("carInfoForm").elements;
+        for (let i = 0; i < formElements.length; i++) {
+          const element = formElements[i];
+          if (element.name) {
+            currentCarData.basic[element.name] = element.value;
+          }
+        }
+
+        // 收集评分数据
+        const categories = [
+          "exterior",
+          "interior",
+          "space",
+          "driving",
+          "nvh",
+          "smart",
+        ];
+        categories.forEach((category) => {
+          // 收集数值评分
+          document
+            .querySelectorAll(`#${category}Tab .rating-slider`)
+            .forEach((slider) => {
+              currentCarData.ratings[category][slider.id] = parseInt(
+                slider.value
+              );
+            });
+
+          // 收集备注
+          const notes = document.getElementById(`${category}Notes`);
+          if (notes) {
+            currentCarData.ratings[category][`${category}Notes`] = notes.value;
+          }
+        });
+
+        // 收集综合评价
+        currentCarData.overall = {
+          overallRating: parseInt(
+            document.getElementById("overallRating").value
+          ),
+          overallComments: document.getElementById("overallComments").value,
+        };
+
+        // 查找是否已存在该车辆记录
+        const existingIndex = allCarsData.findIndex(
+          (car) => car.id === currentCarData.id
+        );
+
+        if (existingIndex >= 0) {
+          // 更新现有记录
+          allCarsData[existingIndex] = JSON.parse(
+            JSON.stringify(currentCarData)
+          );
+        } else {
+          // 添加新记录
+          allCarsData.push(JSON.parse(JSON.stringify(currentCarData)));
+        }
+
+        // 保存数据
+        saveData();
+
+        // 返回首页并刷新车辆列表
+        switchView("homeView");
+        renderCarList();
+
+        // 更新底部导航状态
+        document.querySelectorAll(".footer-nav .nav-item").forEach((item) => {
+          item.classList.remove("active");
+        });
+        document
+          .querySelector('.nav-item[data-view="homeView"]')
+          .classList.add("active");
+      }
+
+      // 打开语音识别模态框
+      function openVoiceModal() {
+        document.getElementById("voiceModal").style.display = "flex";
+        document.getElementById("voiceResult").textContent = "";
+        document.getElementById("voiceStatus").textContent =
+          "点击开始录音按钮开始";
+      }
+
+      // 开始语音识别
+      function startVoiceRecognition() {
+        if (!("webkitSpeechRecognition" in window)) {
+          alert("您的浏览器不支持语音识别功能，请使用Chrome浏览器。");
+          return;
+        }
+
+        const recognition = new webkitSpeechRecognition();
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.lang = "zh-CN";
+
+        let finalTranscript = "";
+
+        recognition.onstart = function () {
+          document.getElementById("voiceStatus").textContent = "正在录音...";
+          document.getElementById("startVoiceBtn").textContent = "停止录音";
+          document.getElementById("startVoiceBtn").onclick = function () {
+            recognition.stop();
+          };
+        };
+
+        recognition.onresult = function (event) {
+          let interimTranscript = "";
+
+          for (let i = event.resultIndex; i < event.results.length; ++i) {
+            if (event.results[i].isFinal) {
+              finalTranscript += event.results[i][0].transcript;
+            } else {
+              interimTranscript += event.results[i][0].transcript;
+            }
+          }
+
+          document.getElementById("voiceResult").innerHTML =
+            finalTranscript +
+            '<span style="color:#999">' +
+            interimTranscript +
+            "</span>";
+        };
+
+        recognition.onerror = function (event) {
+          console.error("Speech recognition error", event.error);
+          document.getElementById("voiceStatus").textContent =
+            "错误: " + event.error;
+          resetVoiceUI();
+        };
+
+        recognition.onend = function () {
+          resetVoiceUI();
+        };
+
+        function resetVoiceUI() {
+          document.getElementById("voiceStatus").textContent = "录音已结束";
+          document.getElementById("startVoiceBtn").textContent = "开始录音";
+          document.getElementById("startVoiceBtn").onclick =
+            startVoiceRecognition;
+        }
+
+        recognition.start();
+      }
+
+      // 确认语音输入
+      function confirmVoiceInput() {
+        const text = document.getElementById("voiceResult").textContent.trim();
+
+        if (text && currentVoiceTarget) {
+          const targetElement = document.getElementById(currentVoiceTarget);
+          if (targetElement) {
+            // 追加到现有内容
+            targetElement.value = targetElement.value
+              ? targetElement.value + "\n" + text
+              : text;
+          }
+        }
+
+        closeModal("voiceModal");
+      }
+
+      // 打开相机模态框
+      function openCameraModal() {
+        document.getElementById("photoModal").style.display = "flex";
+        document.getElementById("capturePhotoBtn").style.display = "block";
+        document.getElementById("retakePhotoBtn").style.display = "none";
+        document.getElementById("confirmPhotoBtn").style.display = "none";
+        document.getElementById("capturedPhoto").style.display = "none";
+        document.getElementById("cameraPreview").style.display = "block";
+
+        // 获取当前标签页
+        const activeTab = document
+          .querySelector(".tab.active")
+          .getAttribute("data-tab");
+        currentPhotoCategory = activeTab;
+
+        // 开启摄像头
+        startCamera();
+      }
+
+      // 启动摄像头
+      function startCamera() {
+        const constraints = {
+          video: {
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+            facingMode: "environment",
+          },
+        };
+
+        const video = document.getElementById("cameraPreview");
+
+        navigator.mediaDevices
+          .getUserMedia(constraints)
+          .then(function (stream) {
+            window.currentStream = stream;
+            video.srcObject = stream;
+          })
+          .catch(function (err) {
+            console.error("启动摄像头失败:", err);
+            alert("无法访问摄像头，请确保已授予权限。");
+            closeModal("photoModal");
+          });
+      }
+
+      // 关闭摄像头
+      function closeCamera() {
+        if (window.currentStream) {
+          window.currentStream.getTracks().forEach((track) => {
+            track.stop();
+          });
+        }
+      }
+
+      // 拍照
+      function capturePhoto() {
+        const video = document.getElementById("cameraPreview");
+        const canvas = document.getElementById("photoCanvas");
+        const photo = document.getElementById("photoResult");
+
+        // 设置画布尺寸
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+
+        // 将视频帧绘制到画布
+        const context = canvas.getContext("2d");
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        // 将画布转换为图片URL
+        const dataUrl = canvas.toDataURL("image/jpeg");
+        photo.src = dataUrl;
+
+        // 显示图片预览，隐藏视频
+        document.getElementById("capturedPhoto").style.display = "block";
+        document.getElementById("cameraPreview").style.display = "none";
+
+        // 显示确认和重拍按钮，隐藏拍照按钮
+        document.getElementById("capturePhotoBtn").style.display = "none";
+        document.getElementById("retakePhotoBtn").style.display = "block";
+        document.getElementById("confirmPhotoBtn").style.display = "block";
+      }
+
+      // 重新拍照
+      function retakePhoto() {
+        document.getElementById("capturedPhoto").style.display = "none";
+        document.getElementById("cameraPreview").style.display = "block";
+        document.getElementById("capturePhotoBtn").style.display = "block";
+        document.getElementById("retakePhotoBtn").style.display = "none";
+        document.getElementById("confirmPhotoBtn").style.display = "none";
+      }
+
+      // 确认拍照
+      function confirmPhoto() {
+        const dataUrl = document.getElementById("photoResult").src;
+
+        // 保存照片数据
+        currentCarData.photos.push({
+          category: currentPhotoCategory,
+          dataUrl: dataUrl,
+        });
+
+        // 在界面上显示照片预览
+        const previewContainer = document.getElementById(
+          currentPhotoCategory + "Photos"
+        );
+        if (previewContainer) {
+          addPhotoToPreview(previewContainer, dataUrl);
+        }
+
+        // 关闭相机和模态框
+        closeCamera();
+        closeModal("photoModal");
+      }
+
+      // 添加照片到预览区域
+      function addPhotoToPreview(container, dataUrl) {
+        const mediaItem = document.createElement("div");
+        mediaItem.className = "media-item";
+        mediaItem.innerHTML = `
+                <img src="${dataUrl}">
+                <button class="delete-btn">×</button>
+            `;
+        container.appendChild(mediaItem);
+
+        // 添加删除按钮事件
+        const deleteBtn = mediaItem.querySelector(".delete-btn");
+        deleteBtn.addEventListener("click", function () {
+          // 从数据中移除照片
+          const category = container.id.replace("Photos", "");
+          currentCarData.photos = currentCarData.photos.filter(
+            (photo) =>
+              !(photo.category === category && photo.dataUrl === dataUrl)
+          );
+
+          // 从界面移除预览
+          container.removeChild(mediaItem);
+        });
+      }
+
+      // 关闭模态框
+      function closeModal(modalId) {
+        document.getElementById(modalId).style.display = "none";
+
+        // 如果是相机模态框，关闭相机
+        if (modalId === "photoModal") {
+          closeCamera();
+        }
+      }
+
+      // 初始化对比视图
+      function initCompareView() {
+        const selectContainer = document.getElementById("compareCarSelect");
+        selectContainer.innerHTML = "";
+
+        // 添加车辆选择选项
+        allCarsData.forEach((car) => {
+          const carSelectItem = document.createElement("div");
+          carSelectItem.className = "car-select-item";
+          carSelectItem.setAttribute("data-id", car.id);
+          carSelectItem.textContent = `${car.basic.carBrand || ""} ${
+            car.basic.carModel || ""
+          } ${car.basic.carTrim || ""}`;
+          selectContainer.appendChild(carSelectItem);
+
+          // 添加点击事件
+          carSelectItem.addEventListener("click", function () {
+            this.classList.toggle("selected");
+            updateComparisonTable();
+          });
+        });
+      }
+
+      // 更新对比表格
+      function updateComparisonTable() {
+        const selectedItems = document.querySelectorAll(
+          ".car-select-item.selected"
+        );
+        const selectedIds = Array.from(selectedItems).map((item) =>
+          item.getAttribute("data-id")
+        );
+
+        if (selectedIds.length === 0) {
+          document.getElementById("comparisonTable").innerHTML =
+            "<p>请选择要对比的车型（最多3个）</p>";
+          document.getElementById("radarChartContainer").innerHTML = "";
+          return;
+        }
+
+        // 限制最多选择3个车型
+        if (selectedIds.length > 3) {
+          alert("最多只能对比3个车型");
+          return;
+        }
+
+        // 获取已选车型数据
+        const selectedCars = allCarsData.filter((car) =>
+          selectedIds.includes(car.id)
+        );
+
+        // 生成对比表格
+        const tableContainer = document.getElementById("comparisonTable");
+        tableContainer.innerHTML = "";
+
+        const table = document.createElement("table");
+        table.className = "comparison-table";
+
+        // 添加表头
+        const thead = document.createElement("thead");
+        let headerRow = document.createElement("tr");
+        headerRow.innerHTML = "<th>特性</th>";
+        selectedCars.forEach((car) => {
+          headerRow.innerHTML += `<th>${car.basic.carBrand || ""} ${
+            car.basic.carModel || ""
+          } ${car.basic.carTrim || ""}</th>`;
+        });
+        thead.appendChild(headerRow);
+        table.appendChild(thead);
+
+        // 添加表格内容
+        const tbody = document.createElement("tbody");
+
+        // 基本信息
+        addComparisonSection(tbody, "基本信息", selectedCars);
+
+        // 价格信息
+        addComparisonRow(tbody, "官方指导价", selectedCars, (car) =>
+          car.basic.msrp ? `${car.basic.msrp}万元` : "-"
+        );
+        addComparisonRow(tbody, "实际报价", selectedCars, (car) =>
+          car.basic.dealerPrice ? `${car.basic.dealerPrice}万元` : "-"
+        );
+
+        // 评分对比
+        addComparisonSection(tbody, "评分(1-10分)", selectedCars);
+
+        // 外观评分
+        addComparisonRow(
+          tbody,
+          "整体设计感",
+          selectedCars,
+          (car) => car.ratings.exterior.exteriorDesign || "-"
+        );
+        addComparisonRow(
+          tbody,
+          "做工质量",
+          selectedCars,
+          (car) => car.ratings.exterior.exteriorQuality || "-"
+        );
+
+        // 内饰评分
+        addComparisonRow(
+          tbody,
+          "内饰设计",
+          selectedCars,
+          (car) => car.ratings.interior?.interiorDesign || "-"
+        );
+        addComparisonRow(
+          tbody,
+          "材质质感",
+          selectedCars,
+          (car) => car.ratings.interior?.materialQuality || "-"
+        );
+
+        // 空间评分
+        addComparisonRow(
+          tbody,
+          "前排空间",
+          selectedCars,
+          (car) => car.ratings.space?.frontSpace || "-"
+        );
+        addComparisonRow(
+          tbody,
+          "后排空间",
+          selectedCars,
+          (car) => car.ratings.space?.rearSpace || "-"
+        );
+        addComparisonRow(
+          tbody,
+          "行李厢空间",
+          selectedCars,
+          (car) => car.ratings.space?.trunkSpace || "-"
+        );
+
+        // 驾驶评分
+        addComparisonRow(
+          tbody,
+          "动力表现",
+          selectedCars,
+          (car) => car.ratings.driving?.powerPerformance || "-"
+        );
+        addComparisonRow(
+          tbody,
+          "操控性能",
+          selectedCars,
+          (car) => car.ratings.driving?.handling || "-"
+        );
+        addComparisonRow(
+          tbody,
+          "刹车性能",
+          selectedCars,
+          (car) => car.ratings.driving?.braking || "-"
+        );
+        addComparisonRow(
+          tbody,
+          "悬挂舒适性",
+          selectedCars,
+          (car) => car.ratings.driving?.rideComfort || "-"
+        );
+
+        // 噪音评分
+        addComparisonRow(
+          tbody,
+          "怠速噪音",
+          selectedCars,
+          (car) => car.ratings.nvh?.idleNoise || "-"
+        );
+        addComparisonRow(
+          tbody,
+          "行驶噪音",
+          selectedCars,
+          (car) => car.ratings.nvh?.drivingNoise || "-"
+        );
+
+        // 智能系统评分
+        addComparisonRow(
+          tbody,
+          "车机系统",
+          selectedCars,
+          (car) => car.ratings.smart?.infotainment || "-"
+        );
+        addComparisonRow(
+          tbody,
+          "驾驶辅助",
+          selectedCars,
+          (car) => car.ratings.smart?.driverAssistance || "-"
+        );
+
+        // 总体评分
+        addComparisonRow(
+          tbody,
+          "总体评分",
+          selectedCars,
+          (car) => car.overall.overallRating || "-"
+        );
+
+        // 优缺点对比
+        addComparisonSection(tbody, "优缺点对比", selectedCars);
+        addComparisonRow(
+          tbody,
+          "优点",
+          selectedCars,
+          (car) => car.advantages.join("、") || "-"
+        );
+        addComparisonRow(
+          tbody,
+          "缺点",
+          selectedCars,
+          (car) => car.disadvantages.join("、") || "-"
+        );
+
+        table.appendChild(tbody);
+        tableContainer.appendChild(table);
+
+        // 生成雷达图
+        generateRadarChart(selectedCars);
+      }
+
+      // 添加对比表格章节标题
+      function addComparisonSection(tbody, title, cars) {
+        const row = document.createElement("tr");
+        row.innerHTML = `<td colspan="${
+          cars.length + 1
+        }" style="background-color: var(--secondary-color); color: white; font-weight: 500;">${title}</td>`;
+        tbody.appendChild(row);
+      }
+
+      // 添加对比表格行
+      function addComparisonRow(tbody, label, cars, valueGetter) {
+        const row = document.createElement("tr");
+        row.innerHTML = `<td>${label}</td>`;
+
+        cars.forEach((car) => {
+          row.innerHTML += `<td>${valueGetter(car)}</td>`;
+        });
+
+        tbody.appendChild(row);
+      }
+
+      // 生成雷达图
+      function generateRadarChart(selectedCars) {
+        // 注意：实际项目中，应该使用Chart.js等库来实现雷达图
+        // 这里仅作示意
+        const container = document.getElementById("radarChartContainer");
+        container.innerHTML =
+          '<p style="text-align:center; padding: 20px;">雷达图需要引入Chart.js等第三方库实现，这里仅作示意。</p>';
+      }
+
+      // 导出所有数据
+      function exportAllData() {
+        const dataStr = JSON.stringify(allCarsData, null, 2);
+        const dataBlob = new Blob([dataStr], { type: "application/json" });
+        const url = URL.createObjectURL(dataBlob);
+
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `车辆试驾数据_${
+          new Date().toISOString().split("T")[0]
+        }.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
+
+      // 导出对比报告
+      function exportComparisonReport() {
+        alert("对比报告导出功能需要引入第三方PDF生成库，如jsPDF等实现");
+      }
+
+      // 加载主题设置
+      function loadThemePreference() {
+        const savedTheme = localStorage.getItem("theme");
+        if (savedTheme === "dark") {
+          document.body.setAttribute("data-theme", "dark");
+        }
+      }
+
+      // 页面加载完成后初始化主题
+      loadThemePreference();
+    </script>
+  </body>
+</html>
